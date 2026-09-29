@@ -9,8 +9,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="FO4 Squad Share — Thư viện đội hình viewer PandaLee">
 <meta property="og:description" content="Tham khảo lương, sơ đồ, team color FC Online. Team đẹp được review trên live 21h30 & 23h hằng ngày.">
-<meta property="og:image" content="herder2.jpg">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐼</text></svg>">
+<meta property="og:image" content="https://pandalee267.github.io/fo4/herder2.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -322,7 +321,7 @@ footer{border-top:1px solid var(--line);margin-top:10px;background:linear-gradie
 <button id="chatFab" onclick="toggleChat()"><span class="dot"></span> 💬 Chat • Donate <span id="unread" style="background:#0c1503;color:var(--lime);font-size:11px;border-radius:99px;padding:2px 8px;display:none">1</span></button>
 <div id="chatPanel"><div class="card chatbox">
   <div class="docktabs"><button class="on" id="dockChatBtn" onclick="dockTab('chat')">💬 Chat viewer</button><button id="dockDonateBtn" onclick="dockTab('donate')">💛 Donate</button><button class="x" style="padding:5px 10px" onclick="toggleChat(true)">–</button></div>
-  <div style="padding:8px 14px;font-size:11.5px;color:var(--mut);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px"><span class="live"></span><span id="online">128 đang xem</span><span style="margin-left:auto">Không toxic nhé ae 🤝</span></div>
+  <div style="padding:8px 14px;font-size:11.5px;color:var(--mut);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px"><span class="live"></span><span id="online">… đang xem</span><span style="margin-left:auto">Không toxic nhé ae 🤝</span></div>
   <!-- pane chat -->
   <div id="dockChat" style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div id="msgs"></div>
@@ -414,6 +413,8 @@ function attachFb(){useFb=true;
     db.ref("fo4/donates").on("value",s=>{donates=toArr(s.val());
       if(!donates.length&&!localStorage.getItem("fo4_seeded_donate")){localStorage.setItem("fo4_seeded_donate","1");db.ref("fo4/donates").push({n:"PandaLee",a:"50.000",m:"Mở hàng đầu tuần"})}
       renderDonates()});
+    try{const pr=db.ref("fo4/presence").push(true);pr.onDisconnect().remove()}catch(e){}
+    db.ref("fo4/presence").on("value",s=>{const o=$("online");if(o)o.textContent=s.numChildren()+" đang xem"});
     toast("🟢 Đã kết nối realtime — ae chat chung được rồi");
 }
 // nén ảnh trước khi up (giữ DB nhẹ)
@@ -474,7 +475,7 @@ $("restoreFile").onchange=e=>{const f=e.target.files[0];$("restoreFile").value="
   r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||!Array.isArray(d.teams))throw 0;
     if(!confirm("Khôi phục backup? Dữ liệu hiện tại sẽ bị THAY THẾ."))return;
     const clean=a=>(a||[]).map(o=>{const c={};Object.keys(o).forEach(k=>{if(k!=="_key"&&o[k]!==undefined)c[k]=o[k]});return c});
-    if(useFb){db.ref("fo4").set({teams:clean(d.teams),pendings:clean(d.pendings),chats:clean(d.chats).slice(-100),donates:clean(d.donates)})}
+    if(useFb){db.ref("fo4/teams").set(clean(d.teams));db.ref("fo4/pendings").set(clean(d.pendings));db.ref("fo4/chats").set(clean(d.chats).slice(-100));db.ref("fo4/donates").set(clean(d.donates))}
     else{teams=d.teams||[];pendings=d.pendings||[];chats=d.chats||[];donates=d.donates||[];save();savePending();saveChats();saveDonates()}
     render();renderChat();renderDonates();toast("Đã khôi phục backup ✔")}catch(err){toast("File backup không hợp lệ")}};
   r.readAsText(f)};
@@ -516,7 +517,8 @@ window.reject=i=>{if(!isAdmin())return;if(confirm("Từ chối (xóa) bài này?
 // pills
 document.querySelectorAll(".pill").forEach(p=>p.onclick=()=>{document.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));p.classList.add("on");pillF=p.dataset.f;render()});
 const IMG_LABELS=["Sơ đồ chính","Chiến thuật đội","Chiến thuật đơn"];
-const allImgs=t=>(t.imgs&&t.imgs.length?t.imgs:t.img?[t.img]:[]);
+const okSrc=s=>typeof s==="string"&&/^(data:image\/|https?:\/\/)/i.test(s);
+const allImgs=t=>((t.imgs&&t.imgs.length?t.imgs:t.img?[t.img]:[]).filter(okSrc));
 function cardHTML(t,idx){
   const pct=Math.min(100,Math.round(t.salary/305*100));
   const first=allImgs(t)[0]||"";
@@ -596,7 +598,8 @@ function renderChat(){const off=Math.max(0,chats.length-60);const list=chats.sli
 const BADWORDS=["dit","du","lon","cac","buoi","dcm","dmm","clgt","kubet","ku casino","ca do","ca cuoc","keo nha cai","tai xiu","xoc dia","baccarat","danh bac","ghi de","lo de","no hu","w88","m88","fb88","188bet","shbet","hi88","jun88","789bet","soi keo","keo bong","ban ca doi thuong","nap tien","rut tien"];
 const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
 const hasBad=t=>{const n=" "+norm(t)+" ";return BADWORDS.some(w=>n.includes(w))};
-let sendTimes=[];
+let sendTimes=[];try{sendTimes=(JSON.parse(localStorage.getItem("fo4_sendtimes")||"[]")||[]).filter(x=>Date.now()-x<60000)}catch(e){sendTimes=[]}
+const saveSendTimes=()=>{try{localStorage.setItem("fo4_sendtimes",JSON.stringify(sendTimes))}catch(e){}};
 function chatAllowed(t){
   if(isAdmin())return true;
   const now=Date.now();sendTimes=sendTimes.filter(x=>now-x<60000);
@@ -604,7 +607,7 @@ function chatAllowed(t){
   if(sendTimes.length>=5){toast("Bạn nhắn nhanh quá, nghỉ 1 phút nhé");return false}
   if(/https?:\/\/|www\./i.test(t)){toast("Gửi link bị chặn để chống spam bro");return false}
   if(hasBad(t)){toast("Tin nhắn chứa từ bị cấm, sửa lại nhé");return false}
-  sendTimes.push(now);return true;
+  sendTimes.push(now);saveSendTimes();return true;
 }
 function send(){const t=$("chatIn").value.slice(0,300).trim();if(!t)return;if(!chatAllowed(t))return;
   let m;
@@ -615,7 +618,7 @@ $("sendBtn").onclick=send;$("chatIn").onkeydown=e=>{if(e.key==="Enter")send()};
 $("adminPin").onkeydown=e=>{if(e.key==="Enter")unlockAdmin()};
 $("authPin").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
 $("authUser").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
-setInterval(()=>{$("online").textContent=(110+Math.floor(Math.random()*40))+" đang xem"},5000);
+
 render();renderChat();renderDonates();renderAuth();connectFb();
 setTimeout(()=>{try{if(localStorage.getItem("fo4_dock_closed")==="1")return}catch(e){}if(window.innerWidth<860)return;if(!$("chatPanel").classList.contains("open"))toggleChat()},600);
 </script>
