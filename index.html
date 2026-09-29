@@ -448,7 +448,7 @@ window.openAuth=()=>{syncAuthModal();$("authModal").classList.add("open");setTim
 window.closeAuth=()=>$("authModal").classList.remove("open");
 window.loginAdmin=()=>{const em=$("authEmail").value.trim(),pw=$("authPass").value;
   if(!em||!pw){toast("Nhập đủ email + mật khẩu");return}
-  firebase.auth().signInWithEmailAndPassword(em,pw).then(()=>{$("authPass").value="";toast("Chào mừng chủ kênh 👑")}).catch(e=>{toast(e&&e.code==="auth/wrong-password"||e.code==="auth/invalid-credential"?"Sai email hoặc mật khẩu":e.code==="auth/too-many-requests"?"Thử lại sau ít phút nhé":"Đăng nhập lỗi, kiểm tra mạng nhé")})};
+  firebase.auth().signInWithEmailAndPassword(em,pw).then(()=>{$("authPass").value="";toast("Chào mừng chủ kênh 👑")}).catch(e=>{const c=e&&e.code||"unknown";toast(c==="auth/wrong-password"||c==="auth/invalid-credential"?"Sai email hoặc mật khẩu":c==="auth/too-many-requests"?"Thử lại sau ít phút nhé":"Lỗi đăng nhập ("+c+"), chụp màn hình gửi mình")})};
 window.logoutAdmin=()=>{try{firebase.auth().signOut()}catch(e){}renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Đã đăng xuất")};
 // sửa đội hình (chủ kênh) — cả chữ lẫn 3 ảnh
 let editIdx=-1, editImgs=["","",""], editSlot=0;
