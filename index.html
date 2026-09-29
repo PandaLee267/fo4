@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FO4 Squad Share — Thư viện đội hình viewer PandaLee</title>
+<meta name="description" content="Thư viện đội hình FC Online của viewer PandaLee — tham khảo lương, sơ đồ, team color. Live 21h30 & 23h hằng ngày.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐼</text></svg>">
+<meta property="og:type" content="website">
+<meta property="og:title" content="FO4 Squad Share — Thư viện đội hình viewer PandaLee">
+<meta property="og:description" content="Tham khảo lương, sơ đồ, team color FC Online. Team đẹp được review trên live 21h30 & 23h hằng ngày.">
+<meta property="og:image" content="herder2.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐼</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<style>
+:root{
+  --bg:#060B16; --panel:#0E1830; --panel2:#13213E; --card:#111F3A;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.14);
+  --txt:#F2F6FF; --mut:#A9B4D2; --mut2:#828FAE;
+  --lime:#C8F542; --lime-d:#9DC72E; --blue:#4AA8FF; --gold:#FFC531; --red:#FF5C5C;
+  --r:18px; --max:1320px; --shadow:0 18px 50px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:"Be Vietnam Pro",system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;z-index:-1;
+  background:radial-gradient(900px 420px at 12% -8%,rgba(200,245,66,.13),transparent 60%),
+  radial-gradient(900px 500px at 88% -5%,rgba(74,168,255,.16),transparent 60%),
+  radial-gradient(700px 600px at 50% 110%,rgba(255,197,49,.06),transparent 60%),var(--bg);}
+button,input,select,textarea{font-family:inherit}
+:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+/* ===== ticker ===== */
+.ticker{background:linear-gradient(90deg,#101d3a,#0c152b);border-bottom:1px solid var(--line);font-size:12.5px;color:#CBD6F2;overflow:hidden;white-space:nowrap}
+.ticker div{display:inline-block;padding:8px 0;white-space:nowrap;will-change:transform;animation:tick 30s linear infinite}
+@keyframes tick{to{transform:translateX(-50%)}}
+.ticker b{color:var(--lime)}
+/* ===== header ===== */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:rgba(6,11,22,.85);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:var(--max);margin:auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+.logo{width:44px;height:44px;border-radius:13px;background:conic-gradient(from 200deg,var(--lime),#7de07d,var(--blue),var(--lime));display:grid;place-items:center;font-weight:900;color:#08120a;font-size:19px;box-shadow:0 6px 20px rgba(200,245,66,.25)}
+.brand b{font-size:16px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+.verified{background:var(--blue);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:2px 8px}
+.brand span{font-size:12px;color:var(--mut)}
+.nav{display:flex;gap:4px;margin-left:12px}
+.nav a{text-decoration:none;font-size:13.5px;font-weight:600;color:var(--mut);padding:9px 13px;border-radius:10px}
+.nav a:hover,.nav a.active{color:var(--txt);background:rgba(255,255,255,.07)}
+@media(max-width:900px){.nav{display:none}}
+.search{margin-left:auto;display:flex;gap:8px;flex:1;max-width:380px;position:relative}
+.search input{flex:1;background:#0B152C;border:1px solid var(--line);border-radius:12px;padding:11px 14px 11px 38px;color:var(--txt);outline:none;width:100%}
+.search::before{content:"⌕";position:absolute;left:13px;top:9px;color:var(--mut);font-size:17px}
+.search input:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,245,66,.15)}
+.btn{border:0;border-radius:12px;padding:11px 18px;font-weight:800;cursor:pointer;font-size:14px;transition:.15s;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn-lime{background:linear-gradient(180deg,#D8FF5C,var(--lime));color:#0c1503;box-shadow:0 8px 24px rgba(200,245,66,.25)}
+.btn-lime:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1px solid var(--line2)}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+/* ===== hero ===== */
+.hero{max-width:var(--max);margin:20px auto 0;padding:0 20px}
+.hero-box{position:relative;border:1px solid var(--line2);border-radius:22px;overflow:hidden;background:linear-gradient(120deg,#14234a 0%,#0d1830 55%,#0a2a1e 100%);box-shadow:var(--shadow)}
+.hero-box::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(90deg,rgba(6,11,22,.92) 30%,rgba(6,11,22,.45) 60%,transparent),
+  repeating-linear-gradient(90deg,transparent 0 88px,rgba(255,255,255,.05) 88px 89px),
+  radial-gradient(500px 260px at 85% 20%,rgba(200,245,66,.25),transparent 70%);pointer-events:none}
+.hero-in{position:relative;z-index:1;padding:34px 32px;display:grid;grid-template-columns:1.2fr .8fr;gap:20px;align-items:center}
+@media(max-width:860px){.hero-in{grid-template-columns:1fr;padding:24px 20px}}
+.eyebrow{font-family:"Space Grotesk";font-size:11px;letter-spacing:2.5px;color:var(--lime);text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.pulse{width:8px;height:8px;border-radius:50%;background:#3dff7a;box-shadow:0 0 12px #3dff7a;animation:bl 1.5s infinite}
+@keyframes bl{50%{opacity:.35}}
+h1{font-size:clamp(26px,4vw,44px);line-height:1.05;font-weight:900;margin-top:10px;letter-spacing:-.5px}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--lime),#8ef0c8);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 .h1sub{display:block;font-size:.58em;font-weight:800;color:var(--txt);letter-spacing:0;margin-top:6px}
+.sub{color:#CDD7EF;font-size:14.5px;line-height:1.7;margin-top:10px;max-width:560px}
+input::placeholder,textarea::placeholder{color:#7E8AA8;opacity:1}
+.hero-cta{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.hero-stats{display:flex;gap:22px;margin-top:18px;flex-wrap:wrap}
+.hero-stats div b{font-family:"Space Grotesk";font-size:22px;display:block}
+.hero-stats div span{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:1px}
+.hero-card{background:rgba(10,18,36,.75);border:1px solid var(--line2);border-radius:16px;padding:16px;backdrop-filter:blur(8px)}
+.streamer-row{display:flex;gap:12px;align-items:center}
+.avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#ffcf5c,#FF7A3D,#c86bff);display:grid;place-items:center;font-weight:900;font-size:22px;color:#1a1005;flex:none;border:2px solid rgba(255,255,255,.35)}
+.sched{margin-top:12px;background:rgba(200,245,66,.08);border:1px solid rgba(200,245,66,.25);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.6}
+/* ===== layout ===== */
+.layout{max-width:var(--max);margin:auto;padding:18px 20px 70px;display:grid;grid-template-columns:310px 1fr;gap:18px;align-items:start}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.topbar-in{flex-wrap:wrap}.search{order:3;flex-basis:100%;max-width:none;margin:0}}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.pad{padding:18px}
+.side-title{font-size:13px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#D6DEF5}
+.side-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.cover{height:74px;background:linear-gradient(90deg,#1c3a6e,#2a5a3a 60%,#6e5a1c);position:relative}
+.cover::after{content:"⚽ ⚽ ⚽";position:absolute;inset:0;display:grid;place-items:center;font-size:26px;opacity:.25;letter-spacing:14px}
+/* donate */
+.qrbox{background:#0A1428;border:1px dashed rgba(255,197,49,.5);border-radius:14px;padding:14px;text-align:center}
+.qrbox img{width:168px;height:168px;border-radius:12px;background:#fff;display:block;margin:6px auto;object-fit:cover}
+.qr-fake{width:168px;height:168px;margin:8px auto;border-radius:12px;background:repeating-linear-gradient(45deg,#fff 0 12px,#f1f4ff 12px 24px);display:grid;place-items:center;color:#0a1428;font-weight:900;font-size:12.5px;line-height:1.5;padding:12px;border:4px solid #fff;box-shadow:0 0 0 1px var(--line2)}
+.bank{font-size:13px;margin-top:10px;line-height:1.7}.bank b{color:var(--gold)}
+.top-list{display:flex;flex-direction:column;gap:9px;margin-top:4px}
+.top-item{display:flex;align-items:center;gap:10px;font-size:13px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.rank{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-weight:900;font-size:12px;background:#22345A;flex:none}
+.rank.r1{background:linear-gradient(180deg,#FFE27A,#E8A800);color:#2a1e00}.rank.r2{background:#C9D4EA;color:#1a2338}.rank.r3{background:#E0A173;color:#2e1a08}
+.dform{display:flex;flex-direction:column;gap:7px;margin-top:10px;background:rgba(255,255,255,.03);border:1px dashed var(--line2);border-radius:12px;padding:11px}
+.dform input{background:#0A1428;border:1px solid var(--line);border-radius:9px;padding:9px 11px;color:#fff;font-size:12.5px;outline:none;width:100%}
+.dform input:focus{border-color:var(--gold)}
+.dform .row2{display:flex;gap:7px}.dempty{font-size:12px;color:var(--mut);text-align:center;padding:12px;border:1px dashed var(--line);border-radius:12px}
+.ddel{margin-left:auto;background:none;border:0;color:var(--mut2);cursor:pointer;font-size:14px;flex:none}
+.ddel:hover{color:var(--red)}
+.eslot{position:relative;border:1px dashed var(--line2);border-radius:10px;min-height:88px;display:grid;place-items:center;cursor:pointer;overflow:hidden;background:#0A1428;font-size:11px;color:var(--mut);text-align:center;padding:18px 6px 22px}
+.eslot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.eslot .etag{position:absolute;left:0;right:0;bottom:0;font-size:10px;font-weight:800;background:rgba(0,0,0,.72);padding:4px;color:var(--lime)}
+.eslot .ex{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.72);border:1px solid var(--line2);color:#fff;border-radius:8px;font-size:11px;padding:3px 8px;cursor:pointer;z-index:1}
+.eslot .ex:hover{background:var(--red);border-color:var(--red)}
+/* upload */
+.up label{font-size:12px;font-weight:700;color:#C6D0EA;margin-top:12px;display:block;letter-spacing:.2px}
+.up input,.up textarea{width:100%;background:#0A1428;border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--txt);font-size:13.5px;margin-top:7px;outline:none}
+.up input:focus,.up textarea:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,245,66,.12)}
+.drop{margin-top:7px;border:1.5px dashed rgba(255,255,255,.25);border-radius:12px;padding:18px 14px;text-align:center;font-size:13px;color:var(--mut);cursor:pointer;transition:.15s;background:rgba(255,255,255,.02)}
+.drop:hover{border-color:var(--lime);color:var(--txt);background:rgba(200,245,66,.06)}
+#preview{max-width:100%;border-radius:10px;margin-top:10px;display:none;border:1px solid var(--line2)}
+/* center */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar select{background:#0B152C;color:var(--txt);border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:13px}
+.pills{display:flex;gap:7px;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:700;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#C6D0EA;border-radius:99px;padding:8px 13px;cursor:pointer}
+.pill.on{background:var(--lime);color:#0c1503;border-color:var(--lime)}
+.count{margin-left:auto;font-size:12.5px;color:var(--mut)}
+.featured{display:grid;grid-template-columns:220px 1fr;gap:0;margin-bottom:14px;border:1px solid rgba(200,245,66,.35);position:relative}
+.featured .fimg{min-height:170px;background:radial-gradient(circle at 50% 120%,#2a4d8f,#0b152c);display:grid;place-items:center;font-weight:900;color:#9DB4E8;text-align:center;padding:12px;position:relative;overflow:hidden}
+.featured .fimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+@media(max-width:640px){.featured{grid-template-columns:1fr}.featured .fimg{min-height:180px}}
+.hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35}
+.avatar img,.avatar-img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.cover{height:110px;padding:0;overflow:hidden}
+.crown{position:absolute;top:-12px;left:14px;background:linear-gradient(180deg,#FFE27A,#E8A800);color:#2a1e00;font-size:11.5px;font-weight:900;border-radius:99px;padding:5px 12px;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px}
+.team{background:linear-gradient(180deg,#1A2B52,#0E1A33);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:.18s}
+.team:hover{transform:translateY(-4px);border-color:rgba(200,245,66,.5);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.thumb{aspect-ratio:16/9.5;background:#0a1224;position:relative;overflow:hidden;cursor:pointer}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:.3s}
+.team:hover .thumb img{transform:scale(1.04)}
+.thumb .ph{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 130%,#28497f,#0b152c);font-weight:900;font-size:15px;color:#9db4e8;text-align:center;padding:10px;line-height:1.5}
+.badge{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);border:1px solid var(--line2);font-size:11px;font-weight:800;padding:6px 10px;border-radius:99px}
+.badge.salary{left:auto;right:10px;color:var(--lime)}
+.like{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.62);border:1px solid var(--line2);color:#fff;border-radius:99px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;backdrop-filter:blur(6px)}
+.like.on{background:var(--lime);color:#0c1503;border-color:var(--lime)}
+.like:hover{transform:scale(1.06)}
+.tbody{padding:13px 14px 14px}
+.tbody b{font-size:15px;display:flex;align-items:center;gap:7px}
+.tbody b i{font-style:normal;font-size:10.5px;background:rgba(74,168,255,.15);border:1px solid rgba(74,168,255,.4);color:#9CD0FF;border-radius:99px;padding:2px 8px;font-weight:700}
+.tbody b i.plus{background:rgba(200,245,66,.12);border-color:rgba(200,245,66,.45);color:var(--lime)}
+.meta{font-size:12.5px;color:var(--mut);margin-top:5px;display:flex;gap:8px;align-items:center}
+.desc{font-size:13.5px;color:#D3DCF2;margin-top:8px;line-height:1.65;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:44px}
+.capbar{height:7px;background:rgba(255,255,255,.1);border-radius:99px;margin-top:10px;overflow:hidden}
+.capbar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--blue));border-radius:99px}
+.caprow{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mut);margin-top:5px}
+.rowbtn{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.rowbtn .mini{flex:1;font-size:11.5px;padding:8px}
+.rowbtn button{flex:1;font-size:12.5px;padding:10px;border-radius:10px;border:1px solid var(--line2);background:#22345A;color:#fff;font-weight:700;cursor:pointer}
+.rowbtn button:first-child{background:linear-gradient(180deg,#D8FF5C,var(--lime));color:#0c1503;border-color:var(--lime);flex:2}
+.rowbtn .del{flex:none;padding:10px 12px;background:transparent;border-color:transparent;color:var(--mut2);font-weight:600}
+.rowbtn .del:hover{color:var(--red);background:rgba(255,92,92,.08)}
+.empty{padding:44px 20px;text-align:center;color:var(--mut);border:1px dashed var(--line2);border-radius:16px}
+.rules{font-size:13.5px;color:#D3DCF2;line-height:1.8}.rules li{margin-left:18px;margin-bottom:6px}
+/* chat floating */
+#chatFab{position:fixed;right:20px;bottom:20px;z-index:70;background:linear-gradient(180deg,#D8FF5C,var(--lime));color:#0c1503;font-weight:900;border:0;border-radius:99px;padding:15px 22px;box-shadow:0 12px 30px rgba(0,0,0,.55);cursor:pointer;font-size:15px;display:inline-flex;align-items:center;gap:8px}
+#chatFab .dot{width:9px;height:9px;border-radius:50%;background:#16a34a;box-shadow:0 0 8px #16a34a}
+#chatPanel{position:fixed;right:20px;bottom:82px;z-index:70;width:340px;max-width:calc(100vw - 40px);display:none;box-shadow:var(--shadow)}
+#chatPanel.open{display:block;animation:pop .2s}
+.chatbox{display:flex;flex-direction:column;height:560px;max-height:70vh}
+.docktabs{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.docktabs button{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--mut);font-weight:800;font-size:12.5px;padding:9px;border-radius:10px;cursor:pointer}
+.docktabs button.on{background:var(--lime);color:#0c1503;border-color:var(--lime)}
+.docktabs .x{flex:none}
+.chathead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.02)}
+.live{width:9px;height:9px;border-radius:50%;background:#3dff7a;box-shadow:0 0 10px #3dff7a;animation:bl 1.4s infinite}
+#msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:9px}
+.msg{font-size:13.5px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:6px 12px 12px 12px;padding:8px 11px;line-height:1.55;max-width:93%;animation:pop .2s}
+@keyframes pop{from{transform:translateY(4px);opacity:0}}
+.msg .who{font-size:10px;font-weight:800;letter-spacing:.4px;color:#8FB8FF;display:flex;gap:6px;align-items:center;margin-bottom:4px}
+.msg .who .av{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#7de07d);display:inline-grid;place-items:center;font-size:10px;color:#08120a;flex:none;font-weight:900}
+.msg.me .who .av{background:linear-gradient(135deg,var(--lime),#7de07d)}
+.msg .txt{color:#F2F6FF;display:block}
+.msg.me{background:rgba(200,245,66,.1);border-color:rgba(200,245,66,.35);border-left-color:var(--lime);align-self:flex-end;border-radius:12px 6px 12px 12px}
+.msg.me .who{color:var(--lime);justify-content:flex-end}
+.mod{background:var(--red);color:#fff;font-size:9px;font-weight:900;border-radius:5px;padding:2px 6px;letter-spacing:.5px}
+.msg .who .wname{font-size:11.5px;letter-spacing:.6px}
+.adm{background:linear-gradient(180deg,#FFE27A,#E8A800);color:#2a1e00;font-size:8px;font-weight:900;border-radius:5px;padding:1px 5px;letter-spacing:.5px}
+.vwr{background:rgba(74,168,255,.15);border:1px solid rgba(74,168,255,.45);color:#9CD0FF;font-size:8px;font-weight:900;border-radius:5px;padding:1px 5px;letter-spacing:.5px}
+.mod{font-size:8px !important;padding:1px 5px !important}
+.chatfoot{padding:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:rgba(0,0,0,.2)}
+.chatfoot input{background:#0A1428;border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:#fff;font-size:13px;outline:none;width:100%}
+.chatfoot input:focus{border-color:var(--blue)}
+
+.modal{position:fixed;inset:0;background:rgba(2,6,14,.82);backdrop-filter:blur(8px);display:none;place-items:center;z-index:80;padding:18px}
+.modal.open{display:grid}
+.modalbox{max-width:840px;width:100%;background:#0E1A33;border:1px solid var(--line2);border-radius:20px;overflow:hidden;max-height:92vh;overflow:auto;box-shadow:var(--shadow)}
+.modalbox img{width:100%;display:block;background:#000}
+#mImgs img{width:100%;display:block;background:#000}
+.mlabel{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#0c1503;background:linear-gradient(90deg,var(--lime),#8ef0c8);padding:7px 16px}
+.car{position:relative;background:#000}
+.car img{width:100%;display:block;max-height:62vh;object-fit:contain;background:#000}
+.carbtn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.55);border:1px solid var(--line2);color:#fff;font-size:24px;font-weight:900;border-radius:50%;width:44px;height:44px;cursor:pointer;line-height:1;padding-bottom:4px}
+.carbtn:hover{background:var(--lime);color:#0c1503;border-color:var(--lime)}
+.carbtn.prev{left:12px}.carbtn.next{right:12px}
+.cdots{display:flex;gap:8px;justify-content:center;padding:12px;background:#0B152C}
+.cdots span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer}
+.cdots span.on{background:var(--lime)}
+.modalpad{padding:18px 20px}
+.x{float:right;background:#22345A;color:#fff;border:1px solid var(--line2);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:800}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#0E1A33;border:1px solid rgba(200,245,66,.5);color:var(--txt);padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:99;box-shadow:var(--shadow)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{border-top:1px solid var(--line);margin-top:10px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
+.foot-in{max-width:720px;margin:auto;padding:40px 20px 34px;text-align:center;color:var(--mut);font-size:12.5px}
+.foot-in .logo{margin:0 auto 12px}
+.foot-in b{color:var(--txt)}
+.foot-name{font-size:16px;font-weight:900;letter-spacing:.5px}
+.foot-sub{margin-top:6px;line-height:1.8}
+.foot-links{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.foot-links a,.foot-links button{text-decoration:none;font-size:12.5px;font-weight:700;color:#C6D0EA;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:99px;padding:8px 16px;cursor:pointer}
+.foot-links a:hover,.foot-links button:hover{border-color:var(--lime);color:var(--lime)}
+.foot-copy{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;line-height:1.8}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="ticker"><div id="tickerTxt"></div></div>
+
+<header class="topbar"><div class="topbar-in">
+  <div class="logo">F4</div>
+  <div class="brand"><b>FO4 SQUAD SHARE</b><span>Thư viện đội hình viewer • EA SPORTS FC Online VN</span></div>
+  <nav class="nav"><a href="#gridSec" class="active">Thư viện</a><a href="#uploadCard">Đăng team</a><button class="pill" style="border:0" onclick="openDock('donate')">Donate</button><a href="#rulesCard">Nội quy</a></nav>
+  <div class="search"><input id="q" placeholder="Tìm HLV, team color, sơ đồ…"></div>
+  <button class="btn btn-ghost" id="authBtn" onclick="openAuth()">🔑 Đăng nhập</button>
+  <button class="btn btn-lime" onclick="document.getElementById('uploadCard').scrollIntoView({behavior:'smooth'})">+ Đăng đội hình</button>
+</div></header>
+
+<section class="hero"><div class="hero-box"><img class="hero-bg" src="herder2.jpg" alt="Góc stream PandaLee" fetchpriority="high"><div class="hero-in">
+  <div>
+    <div class="eyebrow"><span class="pulse"></span> PandaLee • @quyenlee267 • Live 21h30 & 23h</div>
+    <h1>Thư viện <em>đội hình FO4</em><span class="h1sub">của anh em viewer</span></h1>
+    <p class="sub">Upload ảnh team của bạn — ae khác vào tham khảo lương, sơ đồ, team color. Team đẹp, lương chuẩn sẽ được <b style="color:var(--lime)">ghim lên sóng lúc 21h30</b>.</p>
+    <div class="hero-cta">
+      <button class="btn btn-lime" onclick="document.getElementById('uploadCard').scrollIntoView({behavior:'smooth'})">📤 Đăng team ngay</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('gridSec').scrollIntoView({behavior:'smooth'})">Xem thư viện ↓</button>
+      <button class="btn btn-ghost" onclick="openDock('donate')">💛 Donate</button>
+    </div>
+    <div class="hero-stats"><div><b id="stTotal">0</b><span>đội hình</span></div><div><b id="stLike">0</b><span>lượt thích</span></div><div><b id="stView">0</b><span>lượt xem</span></div><div><b style="color:var(--lime)">21:30</b><span>live hằng ngày</span></div></div>
+  </div>
+  <div class="hero-card">
+    <div class="streamer-row"><div class="avatar"><img src="herder4.jpg" alt="PandaLee" onerror="this.remove()"></div><div><b style="font-size:15px">PandaLee <span class="verified">CHỦ KÊNH</span></b><div style="font-size:12px;color:var(--mut);margin-top:3px">@quyenlee267 • TikTok • Zalo • Sơ đồ tủ 4-1-2-3</div></div></div>
+    <div class="sched">📅 <b>2 khung live:</b> 21h30 - 23h30 & 23h - 2h<br>👑 Top 1 tuần được <b style="color:var(--gold)">review đầu live</b></div>
+  </div>
+</div></div></section>
+
+<div class="layout">
+  <!-- LEFT -->
+  <aside style="display:flex;flex-direction:column;gap:16px">
+    <div class="card"><div class="cover"><img src="herder2.jpg" alt="Cover PandaLee" loading="lazy"></div><div class="pad" style="padding-top:14px">
+      <div class="side-title">👑 Chủ kênh</div>
+      <div class="streamer-row"><div class="avatar"><img src="herder4.jpg" alt="PandaLee" onerror="this.remove()"></div><div><b>PandaLee</b><div style="font-size:12px;color:var(--mut)">Rank Thách Đấu • Team Real +8</div></div></div>
+      <div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="window.open('https://www.tiktok.com/@quyenlee267','_blank')">TikTok</button><button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="window.open('https://zalo.me/0961932836','_blank')">Zalo</button></div>
+    </div></div>
+
+    <div class="card pad" id="uploadCard">
+      <div class="side-title">📤 Đăng đội hình</div>
+      <p style="font-size:11.5px;color:var(--mut);margin-bottom:4px">Bài đăng cần chủ kênh duyệt mới hiển thị. Bản demo: ảnh lưu trên máy bạn.</p>
+      <div class="up">
+        <label>Tên HLV *</label><input id="fName" placeholder="vd: BeoDeoNe">
+        <label>Team color / CLB</label><input id="fTeam" placeholder="vd: Real Madrid, Chelsea, Việt Nam 26VB…">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>Mức thẻ chung</label><input id="fPlus" placeholder="vd: +8"></div><div><label>Giá trị team (BP)</label><input id="fBp" placeholder="vd: 500 tỷ"></div></div>
+        <label>Sơ đồ</label><input id="fForm" placeholder="vd: 4-1-2-3" list="forms"><datalist id="forms"><option>4-2-3-1</option><option>4-2-1-3</option><option>4-2-2-2</option><option>4-1-2-3</option><option>5-2-3</option><option>4-4-2</option></datalist>
+        <label>Lương team (/305)</label><input id="fSalary" type="number" min="0" max="305" placeholder="vd: 300">
+        <label>Mô tả nhanh</label><textarea id="fDesc" rows="2" placeholder="Lối đá, con hàng gánh team…"></textarea>
+        <label>1. Sơ đồ chính *</label>
+        <div class="drop" id="drop1">📷 Bấm để chọn ảnh<br><small>jpg / png, dưới 2.5MB, thấy rõ 11 cầu thủ</small><input type="file" id="fFile1" accept="image/*" hidden></div>
+        <img id="preview1" alt="" style="max-width:100%;border-radius:10px;margin-top:10px;display:none;border:1px solid var(--line2)">
+        <label>2. Chiến thuật đội</label>
+        <div class="drop" id="drop2">📷 Bấm để chọn ảnh chiến thuật đội<input type="file" id="fFile2" accept="image/*" hidden></div>
+        <img id="preview2" alt="" style="max-width:100%;border-radius:10px;margin-top:10px;display:none;border:1px solid var(--line2)">
+        <label>3. Chiến thuật đơn</label>
+        <div class="drop" id="drop3">📷 Bấm để chọn ảnh chiến thuật đơn<input type="file" id="fFile3" accept="image/*" hidden></div>
+        <img id="preview3" alt="" style="max-width:100%;border-radius:10px;margin-top:10px;display:none;border:1px solid var(--line2)">
+        <button class="btn btn-lime" style="width:100%;margin-top:12px" id="btnPost">🚀 Đăng lên thư viện</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER -->
+  <main id="gridSec">
+    <div class="toolbar">
+      <div class="pills" id="pills">
+        <button class="pill on" data-f="">Tất cả</button><button class="pill" data-f="4-2-3-1">4-2-3-1</button><button class="pill" data-f="4-2-1-3">4-2-1-3</button><button class="pill" data-f="4-2-2-2">4-2-2-2</button><button class="pill" data-f="4-1-2-3">4-1-2-3</button><button class="pill" data-f="5-2-3">5-2-3</button><button class="pill" data-f="4-4-2">4-4-2</button>
+      </div>
+      <select id="sort"><option value="new">🆕 Mới nhất</option><option value="like">🔥 Nhiều like</option><option value="view">👁 Xem nhiều</option></select>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="card pad" id="pendingSec" style="display:none;margin-bottom:14px;border-color:rgba(255,197,49,.5)"></div>
+    <div class="card pad featured" id="featured" style="display:none"></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" style="display:none;margin-top:12px">Chưa có đội hình nào khớp.<br><button class="btn btn-lime" style="margin-top:10px" onclick="document.getElementById('uploadCard').scrollIntoView({behavior:'smooth'})">Đăng team đầu tiên →</button></div>
+    <div class="card pad" style="margin-top:14px" id="rulesCard">
+      <div class="side-title">📌 Nội quy thư viện</div>
+      <ol class="rules"><li>Ảnh rõ nét, thấy đủ <b>11 cầu thủ + lương team /305</b>.</li><li>Đăng đủ <b>3 ảnh: sơ đồ chính, chiến thuật đội, chiến thuật đơn</b>.</li><li>Ghi đúng <b>sơ đồ + team color + mức thẻ</b> để ae lọc nhanh.</li><li>Bài đăng cần <b>chủ kênh duyệt</b> mới hiển thị.</li><li>Team nhiều like nhất tuần được <b>review trên live</b>.</li><li>Không spam, không ảnh ngoài FC Online — mod xóa thẳng tay.</li></ol>
+    </div>
+  </main>
+
+</div>
+
+<!-- DOCK NỔI GÓC PHẢI: CHAT + DONATE -->
+<button id="chatFab" onclick="toggleChat()"><span class="dot"></span> 💬 Chat • Donate <span id="unread" style="background:#0c1503;color:var(--lime);font-size:11px;border-radius:99px;padding:2px 8px;display:none">1</span></button>
+<div id="chatPanel"><div class="card chatbox">
+  <div class="docktabs"><button class="on" id="dockChatBtn" onclick="dockTab('chat')">💬 Chat viewer</button><button id="dockDonateBtn" onclick="dockTab('donate')">💛 Donate</button><button class="x" style="padding:5px 10px" onclick="toggleChat(true)">–</button></div>
+  <div style="padding:8px 14px;font-size:11.5px;color:var(--mut);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px"><span class="live"></span><span id="online">128 đang xem</span><span style="margin-left:auto">Không toxic nhé ae 🤝</span></div>
+  <!-- pane chat -->
+  <div id="dockChat" style="display:flex;flex-direction:column;flex:1;min-height:0">
+    <div id="msgs"></div>
+    <div class="chatfoot">
+      <label style="font-size:11.5px;font-weight:700;color:#C6D0EA">Tên hiển thị</label>
+      <input id="nick" placeholder="vd: PandaLee">
+      <label style="font-size:11.5px;font-weight:700;color:#C6D0EA">Nội dung</label>
+      <div style="display:flex;gap:8px"><input id="chatIn" placeholder="vd: Team Real này thủ ngon quá…" style="flex:1"><button class="btn btn-lime" id="sendBtn" style="padding:10px 16px">Gửi</button></div>
+    </div>
+  </div>
+  <!-- pane donate -->
+  <div id="dockDonate" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:auto;padding:14px">
+    <div class="qrbox" id="paneBank">
+      <div style="font-size:13px;font-weight:800;margin-bottom:6px">☕ Ủng hộ PandaLee ly cafe ở đây</div>
+      <img src="qr-cafe.jpg" alt="QR ủng hộ PandaLee" onerror="this.style.display='none';document.getElementById('qrFake').style.display='grid'">
+      <div class="qr-fake" id="qrFake" style="display:none">QR chưa tải được<br><span style="font-weight:400;font-size:11px">Kiểm tra file qr-cafe.jpg<br>cạnh file index.html</span></div>
+      <div class="bank">🏦 VCB • <b>1046162788</b><br>CTK: NGUYEN MANH QUYEN<br><span style="color:var(--mut);font-size:12px">ND: tên + mời cafe</span></div>
+      <button class="btn btn-lime" style="width:100%;margin-top:10px;font-size:13px" onclick="copyStk()">⧉ Copy STK</button>
+    </div>
+    <div style="margin-top:12px"><div class="side-title">🏆 Top cafe tuần</div><div class="top-list" id="donateList"></div>
+      <div class="dform" id="donateLock"><span style="font-size:12.5px;font-weight:700">🔒 Khu vực chủ kênh</span><input id="adminPin" type="password" placeholder="Nhập mã chủ kênh để thêm donate"><button class="btn btn-ghost" style="font-size:12.5px;padding:9px" onclick="unlockAdmin()">Mở khóa</button></div>
+      <div class="dform" id="donateForm" style="display:none"><div class="row2"><input id="dName" placeholder="Tên người donate"><input id="dAmount" placeholder="Số tiền (vd: 50K)" style="max-width:110px"></div><input id="dMsg" placeholder="Lời nhắn (không bắt buộc)"><button class="btn btn-lime" style="font-size:12.5px;padding:9px" onclick="addDonate()">+ Thêm donate</button></div>
+    </div>
+  </div>
+</div></div>
+<div class="modal" id="modal"><div class="modalbox"><div class="modalpad"><button class="x" onclick="closeModal()">Đóng ✕</button><h2 id="mTitle" style="font-size:19px"></h2><p class="meta" id="mMeta" style="font-size:12.5px;color:var(--mut);margin-top:6px"></p></div><div id="mImgs"></div><div class="modalpad"><p id="mDesc" style="font-size:14px;line-height:1.75;color:#CBD5EF"></p><div id="mActions" style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-lime" id="mLike" style="flex:1">♥ Thích</button><button class="btn btn-ghost" onclick="copyTeam()" style="flex:1">⧉ Copy info team</button></div></div></div></div>
+<!-- MODAL ĐĂNG NHẬP CHỦ KÊNH -->
+<div class="modal" id="authModal"><div class="modalbox" style="max-width:380px"><div class="modalpad">
+  <button class="x" onclick="closeAuth()">✕</button>
+  <h2 style="font-size:18px">🔑 Chủ kênh đăng nhập</h2>
+  <p style="font-size:13px;color:var(--mut);margin-top:6px;line-height:1.6">Đăng nhập để có quyền <b>thêm / sửa / xóa</b> mọi đội hình, donate và tin nhắn chat.</p>
+  <div id="authForm" class="dform" style="margin-top:12px"><input id="authPin" type="password" placeholder="Nhập mã chủ kênh"><button class="btn btn-lime" style="font-size:13px;padding:10px" onclick="loginAdmin()">Đăng nhập</button></div>
+  <div id="authInfo" class="dform" style="display:none;margin-top:12px;text-align:center"><div style="font-size:14px">👑 Đang đăng nhập: <b style="color:var(--lime)">PandaLee</b></div><button class="btn btn-ghost" style="font-size:13px;padding:10px" onclick="logoutAdmin()">Đăng xuất</button></div>
+</div></div></div>
+<!-- MODAL SỬA ĐỘI HÌNH (chủ kênh) -->
+<div class="modal" id="editModal"><div class="modalbox" style="max-width:440px"><div class="modalpad">
+  <button class="x" onclick="closeEdit()">✕</button>
+  <h2 style="font-size:18px">✏️ Sửa đội hình</h2>
+  <div class="up">
+    <label>Tên HLV</label><input id="eName">
+    <label>Team color / CLB</label><input id="eTeam">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>Mức thẻ</label><input id="ePlus"></div><div><label>Giá trị (BP)</label><input id="eBp"></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>Sơ đồ</label><input id="eForm"></div><div><label>Lương (/305)</label><input id="eSalary" type="number" min="0" max="305"></div></div>
+    <label>Mô tả</label><textarea id="eDesc" rows="3"></textarea>
+    <label>Ảnh — bấm khung để thay, bấm ✕ để xóa</label>
+    <div id="eImgs" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:7px"></div>
+    <input type="file" id="eFile" accept="image/*" hidden>
+    <button class="btn btn-lime" style="width:100%;margin-top:12px" onclick="saveEdit()">💾 Lưu thay đổi</button>
+  </div>
+</div></div></div>
+<div id="toast"></div>
+
+<footer><div class="foot-in">
+  <div class="logo" style="width:46px;height:46px;font-size:19px">F4</div>
+  <div class="foot-name">FO4 SQUAD SHARE</div>
+  <div class="foot-sub">Thư viện đội hình viewer PandaLee<br>🔴 Live 21h30 - 23h30 & 23h - 2h • TikTok @quyenlee267</div>
+  <div class="foot-links"><a href="#gridSec">Thư viện</a><a href="#uploadCard">Đăng team</a><button onclick="openDock('donate')">💛 Donate</button><a href="#rulesCard">Nội quy</a><a href="https://www.tiktok.com/@quyenlee267" target="_blank" rel="noopener">TikTok</a><a href="https://zalo.me/0961932836" target="_blank" rel="noopener">Zalo</a></div>
+  <div class="foot-copy">© 2026 PandaLee • Làm bằng ♥ cho anh em FC Online VN<br>Web cộng đồng fan-made, không liên kết với EA SPORTS hay Garena.</div>
+</div></footer>
+
+<script>
+const LS_T="fo4_teams_v4", LS_C="fo4_chat_v3", LS_N="fo4_nick";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let toastT; function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2200)}
+// ===== FIREBASE REALTIME (chung cho mọi máy, rớt mạng thì dùng máy này) =====
+const FB_CONFIG={"apiKey":"AIzaSyC-7D2MdE4HjtvlUIYCBwpdRwrCBvnON6o","authDomain":"fo4pandalee.firebaseapp.com","databaseURL":"https://fo4pandalee-default-rtdb.firebaseio.com","projectId":"fo4pandalee","storageBucket":"fo4pandalee.firebasestorage.app","messagingSenderId":"20228445021","appId":"1:20228445021:web:35da5fc4f5e37a75d78eb4"};
+let useFb=false, db=null;
+const toArr=o=>Object.entries(o||{}).map(([k,v])=>Object.assign({_key:k},v));
+function connectFb(){
+  try{
+    if(typeof firebase==="undefined")return;
+    if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);
+    db=firebase.database();useFb=true;
+    db.ref("fo4/teams").on("value",s=>{teams=toArr(s.val());render()});
+    db.ref("fo4/pendings").on("value",s=>{pendings=toArr(s.val());render()});
+    db.ref("fo4/chats").limitToLast(80).on("value",s=>{chats=toArr(s.val());renderChat()});
+    db.ref("fo4/donates").on("value",s=>{donates=toArr(s.val());
+      if(!donates.length&&!localStorage.getItem("fo4_seeded_donate")){localStorage.setItem("fo4_seeded_donate","1");db.ref("fo4/donates").push({n:"PandaLee",a:"50.000",m:"Mở hàng đầu tuần"})}
+      renderDonates()});
+    toast("🟢 Đã kết nối realtime — ae chat chung được rồi");
+  }catch(e){useFb=false}
+}
+// nén ảnh trước khi up (giữ DB nhẹ)
+function fileToDataURL(f,maxDim){maxDim=maxDim||1400;return new Promise((res,rej)=>{
+  const img=new Image();
+  img.onload=()=>{try{const r=Math.min(1,maxDim/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(img.src);res(c.toDataURL("image/jpeg",0.8))}catch(e){rej(e)}};
+  img.onerror=rej;img.src=URL.createObjectURL(f)})}
+window.copyStk=()=>{try{navigator.clipboard.writeText("1046162788")}catch(e){}toast("Đã copy STK 1046162788 — cảm ơn bro ly cafe! ☕")};
+let teams=[]; try{teams=JSON.parse(localStorage.getItem(LS_T)||"[]")}catch(e){teams=[]}
+let chats=[]; try{chats=JSON.parse(localStorage.getItem(LS_C)||"[]")}catch(e){chats=[]}
+  const save=()=>{try{localStorage.setItem(LS_T,JSON.stringify(teams))}catch(e){}};
+const saveChats=()=>{try{localStorage.setItem(LS_C,JSON.stringify(chats.slice(-100)))}catch(e){}};
+const saveDonates=()=>{try{localStorage.setItem(LS_D,JSON.stringify(donates.slice(0,20)))}catch(e){}};
+let liked=new Set();try{liked=new Set(JSON.parse(localStorage.getItem("fo4_liked2")||"[]"))}catch(e){};
+let pillF="", modalIdx=0;
+// donate thủ công — KHÓA BẰNG MÃ CHỦ KÊNH (đổi mã ở dòng dưới)
+const ADMIN_PIN="Quyen202Lee";
+const LS_D="fo4_donates_v1";
+const isAdmin=()=>{try{return sessionStorage.getItem("fo4_admin")==="1"}catch(e){return false}};
+window.unlockAdmin=()=>{if($("adminPin").value===ADMIN_PIN){try{sessionStorage.setItem("fo4_admin","1")}catch(e){}renderDonates();render();renderChat();renderAuth();toast("Mở khóa thành công ☕")}else toast("Sai mã rồi bro")};
+// đăng nhập chủ kênh
+function renderAuth(){$("authBtn").textContent=isAdmin()?"👑 PandaLee":"🔑 Đăng nhập"}
+function syncAuthModal(){const a=isAdmin();$("authForm").style.display=a?"none":"flex";$("authInfo").style.display=a?"block":"none"}
+window.openAuth=()=>{syncAuthModal();$("authModal").classList.add("open");setTimeout(()=>{try{$("authPin").focus()}catch(e){}},100)};
+window.closeAuth=()=>$("authModal").classList.remove("open");
+window.loginAdmin=()=>{if($("authPin").value===ADMIN_PIN){try{sessionStorage.setItem("fo4_admin","1")}catch(e){}$("authPin").value="";renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Chào mừng chủ kênh 👑")}else toast("Sai mã rồi bro")};
+window.logoutAdmin=()=>{try{sessionStorage.removeItem("fo4_admin")}catch(e){}renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Đã đăng xuất")};
+// sửa đội hình (chủ kênh) — cả chữ lẫn 3 ảnh
+let editIdx=-1, editImgs=["","",""], editSlot=0;
+function renderEditImgs(){$("eImgs").innerHTML=editImgs.map((s,k)=>`<div class="eslot" onclick="pickEditImg(${k})">${s?`<img src="${s}" alt="">`:`<span>📷<br>Trống</span>`}<span class="etag">${IMG_LABELS[k]}</span>${s?`<button class="ex" title="Xóa ảnh này" onclick="event.stopPropagation();delEditImg(${k})">✕</button>`:""}</div>`).join("")}
+window.pickEditImg=k=>{editSlot=k;$("eFile").click()};
+window.delEditImg=k=>{if(k===0&&editImgs[1]+editImgs[2]===""&&editImgs[0]!==""){if(!confirm("Xóa ảnh sơ đồ chính? Team sẽ không còn ảnh bìa."))return}editImgs[k]="";renderEditImgs()};
+$("eFile").onchange=e=>{const f=e.target.files[0];$("eFile").value="";if(!f)return;
+  fileToDataURL(f).then(u=>{if(u.length>2800000){toast("Ảnh vẫn nặng, chọn ảnh nhỏ hơn nhé");return}editImgs[editSlot]=u;renderEditImgs()}).catch(()=>toast("Đọc ảnh lỗi, thử ảnh khác nhé"))};
+window.editTeam=i=>{if(!isAdmin()){toast("Chỉ chủ kênh mới sửa được");return}editIdx=i;const t=teams[i];
+  $("eName").value=t.name||"";$("eTeam").value=t.team||"";$("ePlus").value=t.plus||"";$("eBp").value=t.bp||"";
+  $("eForm").value=t.form||"";$("eSalary").value=t.salary||"";$("eDesc").value=t.desc||"";
+  const cur=allImgs(t);editImgs=[cur[0]||"",cur[1]||"",cur[2]||""];renderEditImgs();
+  $("editModal").classList.add("open")};
+window.closeEdit=()=>$("editModal").classList.remove("open");
+window.saveEdit=()=>{if(editIdx<0||!teams[editIdx])return;
+  if(!editImgs[0]){toast("Sơ đồ chính không được trống");return}
+  const t=teams[editIdx];
+  t.name=$("eName").value.trim()||t.name;t.team=$("eTeam").value.trim()||t.team;t.plus=$("ePlus").value.trim();
+  t.bp=$("eBp").value.trim();t.form=$("eForm").value.trim()||t.form;t.salary=+($("eSalary").value)||t.salary;t.desc=$("eDesc").value.trim();
+  t.imgs=[...editImgs];delete t.img;
+  const k=t._key;
+  if(useFb&&k){const u={name:t.name,team:t.team,plus:t.plus,bp:t.bp,form:t.form,salary:t.salary,desc:t.desc,imgs:t.imgs,pinned:!!t.pinned};db.ref("fo4/teams/"+k).update(u).then(()=>{closeEdit();toast("Đã lưu thay đổi ✔")}).catch(()=>toast("Lưu lỗi, thử lại nhé"))}
+  else{save();closeEdit();render();toast("Đã lưu thay đổi ✔")}};
+window.delChat=i=>{if(!isAdmin())return;if(confirm("Xóa tin nhắn này?")){const k=chats[i]&&chats[i]._key;if(useFb&&k){db.ref("fo4/chats/"+k).remove()}else{chats.splice(i,1);saveChats()}renderChat()}};
+let donates=[]; try{donates=JSON.parse(localStorage.getItem(LS_D)||"[]")}catch(e){donates=[]}
+if(!localStorage.getItem(LS_D)){donates=[{n:"PandaLee",a:"50.000",m:"Mở hàng đầu tuần"}];try{localStorage.setItem(LS_D,JSON.stringify(donates))}catch(e){}}
+function renderTicker(){const box=$("tickerTxt");if(!box)return;const medal=["🥇","🥈","🥉"];
+  const top=donates.length?donates.slice(0,5).map((d,i)=>`${medal[i]||"•"} <b>Top ${i+1} ${esc(d.n)}</b> — ${esc(d.a)}${d.m?` (${esc(d.m)})`:""}`).join(" &nbsp;•&nbsp; "):"Chưa có ly cafe nào — ae mở hàng đi nào ☕";
+  const half=`🏆 <b>TOP DONATE TUẦN</b> — ${top} &nbsp;•&nbsp; 🔴 LIVE 21H30 & 23H HẰNG NGÀY &nbsp;•&nbsp;`;
+  box.innerHTML=half+half+half+half;}
+function renderDonates(){renderTicker();const box=$("donateList");if(!box)return;const admin=isAdmin();
+  $("donateLock").style.display=admin?"none":"flex";$("donateForm").style.display=admin?"flex":"none";
+  box.innerHTML=donates.length?donates.map((d,i)=>{const rc=i===0?"r1":i===1?"r2":i===2?"r3":"";
+    return `<div class="top-item"><span class="rank ${rc}">${i+1}</span><span><b>${esc(d.n)}</b><br><small style="color:var(--mut)">${esc(d.a)}${d.m?" — &quot;"+esc(d.m)+"&quot;":""}</small></span>${admin?`<button class="ddel" title="Xóa" onclick="delDonate(${i})">✕</button>`:""}</div>`}).join("")
+    :`<div class="dempty">Chưa có ly cafe nào tuần này ☕<br>Ae mở hàng đi nào!</div>`}
+window.addDonate=()=>{const n=$("dName").value.trim(),a=$("dAmount").value.trim(),m=$("dMsg").value.trim();
+  if(!n||!a){toast("Nhập tên + số tiền đã bro");return}
+  if(useFb){db.ref("fo4/donates").push({n,a,m})}else{donates.unshift({n,a,m});saveDonates();donates=donates.slice(0,20)}
+  $("dName").value="";$("dAmount").value="";$("dMsg").value="";renderDonates();toast("Đã thêm ly cafe của "+n+" ☕")};
+window.delDonate=i=>{if(confirm("Xóa donate này?")){const k=donates[i]&&donates[i]._key;if(useFb&&k){db.ref("fo4/donates/"+k).remove()}else{donates.splice(i,1);saveDonates()}renderDonates()}};
+// upload 3 ảnh: sơ đồ chính / chiến thuật đội / chiến thuật đơn
+let imgsData=["","",""];
+function bindSlot(n){$("drop"+n).onclick=()=>$("fFile"+n).click();
+  $("fFile"+n).onchange=e=>{const f=e.target.files[0];if(!f)return;
+    fileToDataURL(f).then(u=>{if(u.length>2800000){toast("Ảnh "+n+" vẫn nặng, chọn ảnh nhỏ hơn nhé");return}imgsData[n-1]=u;$("preview"+n).src=u;$("preview"+n).style.display="block"}).catch(()=>toast("Đọc ảnh lỗi, thử ảnh khác nhé"))}}
+bindSlot(1);bindSlot(2);bindSlot(3);
+const LS_P="fo4_pending_v1";
+let pendings=[]; try{pendings=JSON.parse(localStorage.getItem(LS_P)||"[]")}catch(e){pendings=[]}
+const savePending=()=>{try{localStorage.setItem(LS_P,JSON.stringify(pendings))}catch(e){}};
+$("btnPost").onclick=()=>{const name=$("fName").value.trim(),form=$("fForm").value.trim()||"4-1-2-3";
+  if(!name){toast("Nhập tên HLV đã bro");return}
+  if(!imgsData[0]){toast("Chọn ảnh sơ đồ chính đã bro");return}
+  const item={id:"L"+Date.now()+Math.floor(Math.random()*999),name,team:$("fTeam").value.trim()||"Tự do",form,salary:+$("fSalary").value||300,plus:$("fPlus").value.trim(),bp:$("fBp").value.trim(),desc:$("fDesc").value.trim(),likes:0,views:0,ts:Date.now(),imgs:[...imgsData],mine:true};
+  imgsData=["","",""];["preview1","preview2","preview3"].forEach(p=>$(p).style.display="none");["fName","fTeam","fPlus","fBp","fForm","fSalary","fDesc"].forEach(i=>$(i).value="");["fFile1","fFile2","fFile3"].forEach(i=>$(i).value="");
+  if(isAdmin()){if(useFb){db.ref("fo4/teams").push(item)}else{teams.unshift(item);save()}render();toast("Đã đăng thẳng (chủ kênh) 🚀")}
+  else{if(useFb){db.ref("fo4/pendings").push(item)}else{pendings.unshift(item);savePending()}render();toast("Đã gửi! Chờ chủ kênh duyệt rồi mới hiện nhé ⏳")}};
+window.approve=i=>{if(!isAdmin())return;const p=pendings[i];if(!p)return;const pk=p._key;
+  if(useFb){db.ref("fo4/teams").push(Object.assign({},p,{_key:undefined}));if(pk)db.ref("fo4/pendings/"+pk).remove()}else{pendings.splice(i,1);teams.unshift(p);save();savePending()}render();toast("Đã duyệt team của "+p.name+" ✔")};
+window.reject=i=>{if(!isAdmin())return;if(confirm("Từ chối (xóa) bài này?")){const pk=pendings[i]&&pendings[i]._key;if(useFb&&pk){db.ref("fo4/pendings/"+pk).remove()}else{pendings.splice(i,1);savePending()}render()}};
+// pills
+document.querySelectorAll(".pill").forEach(p=>p.onclick=()=>{document.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));p.classList.add("on");pillF=p.dataset.f;render()});
+const IMG_LABELS=["Sơ đồ chính","Chiến thuật đội","Chiến thuật đơn"];
+const allImgs=t=>(t.imgs&&t.imgs.length?t.imgs:t.img?[t.img]:[]);
+function cardHTML(t,idx){
+  const pct=Math.min(100,Math.round(t.salary/305*100));
+  const first=allImgs(t)[0]||"";
+  const nImg=allImgs(t).filter(Boolean).length;
+  const face=first?`<img src="${first}" loading="lazy" alt="">`:`<div class="ph">${esc(t.team||"FO4")}<br><span style="font-size:11px;font-weight:400">Chưa có ảnh — bấm để xem chi tiết</span></div>`;
+  const admin=isAdmin(), own=t.mine, tid=t.id||t._key||("x"+idx);
+  return `<div class="team"><div class="thumb" onclick="openModal(${idx})">${face}<span class="badge">⚽ ${esc(t.form)} • ${t.salary}/305</span>${t.pinned?`<span class="badge" style="top:10px;left:10px;bottom:auto;background:rgba(200,245,66,.92);color:#0c1503;border-color:transparent">📌 Ghim</span>`:""}${nImg>1?`<span class="badge" style="left:auto;right:10px;bottom:38px">📷 ${nImg} ảnh</span>`:""}<button class="like ${liked.has(tid)?"on":""}" onclick="event.stopPropagation();like(${idx})">♥ ${t.likes||0}</button></div>
+  <div class="tbody"><b>${esc(t.name)} <i>${esc(t.team)}</i>${t.plus?` <i class="plus">${esc(t.plus)}</i>`:""}</b><div class="meta">👁 ${t.views}${t.bp?` • 💰 ${esc(t.bp)}`:``} • ${new Date(t.ts).toLocaleDateString("vi-VN")}${admin&&t.reports?` • <span style="color:var(--red);font-weight:800">🚩 ${t.reports} báo xấu</span>`:""}</div><div class="desc">${esc(t.desc||"Chưa có mô tả")}</div>
+  <div class="capbar"><i style="width:${pct}%"></i></div><div class="caprow"><span>Lương ${t.salary}/305</span><span>${pct}% quỹ lương</span></div>
+  <div class="rowbtn"><button onclick="openModal(${idx})">Xem ảnh</button>${admin?`<button class="mini" onclick="editTeam(${idx})">Sửa</button><button class="mini" onclick="pin(${idx})">${t.pinned?"Bỏ ghim":"Ghim"}</button>`:""}${!admin&&!own?`<button class="mini del" title="Báo bài vi phạm cho chủ kênh" onclick="report(${idx})">Báo xấu</button>`:""}${admin||own?`<button class="del" title="Chủ team hoặc chủ kênh mới xóa được" onclick="del(${idx})">Xóa</button>`:""}</div></div></div>`;
+}
+function render(){
+  const q=($("q")?$("q").value:"").toLowerCase(), s=$("sort").value;
+  let list=teams.map((t,i)=>({t,i})).filter(({t})=>(t.name+" "+t.team+" "+t.form+" "+(t.desc||"")).toLowerCase().includes(q)&&(!pillF||t.form===pillF));
+  if(s==="like")list.sort((a,b)=>b.t.likes-a.t.likes);else if(s==="view")list.sort((a,b)=>b.t.views-a.t.views);else list.sort((a,b)=>b.t.ts-a.t.ts);
+  list.sort((a,b)=>((b.t.pinned?1:0)-(a.t.pinned?1:0)));
+  $("count").textContent=list.length+" đội hình";
+  $("stTotal").textContent=teams.length;$("stLike").textContent=teams.reduce((a,t)=>a+t.likes,0);$("stView").textContent=teams.reduce((a,t)=>a+t.views,0);
+  $("empty").style.display=list.length?"none":"block";
+  // hàng chờ duyệt — chỉ chủ kênh thấy
+  const ps=$("pendingSec");
+  if(isAdmin()&&pendings.length){ps.style.display="block";
+    ps.innerHTML=`<div class="side-title">⏳ Chờ duyệt (${pendings.length})</div><div class="top-list">`+pendings.map((t,i)=>`<div class="top-item"><span><b>${esc(t.name)}</b><br><small style="color:var(--mut)">${esc(t.team)} • ${esc(t.form)} • Lương ${t.salary}/305</small></span><span style="margin-left:auto;display:flex;gap:6px;flex:none"><button class="btn btn-ghost" style="font-size:11.5px;padding:7px 12px" onclick="previewPending(${i})">Xem</button><button class="btn btn-lime" style="font-size:11.5px;padding:7px 12px" onclick="approve(${i})">Duyệt</button><button class="btn btn-ghost" style="font-size:11.5px;padding:7px 12px" onclick="reject(${i})">Xóa</button></span></div>`).join("")+`</div>`}
+  else ps.style.display="none";
+  // featured = team nhiều like nhất, hiện khi có trên 2 team
+  if(list.length>2){const top=[...teams].map((t,i)=>({t,i})).sort((a,b)=>b.t.likes-a.t.likes)[0];
+    if(top&&top.t.likes>0){$("featured").style.display="grid";
+      $("featured").innerHTML=`<span class="crown">👑 Team hot nhất tuần</span><div class="fimg">${allImgs(top.t)[0]?`<img src="${allImgs(top.t)[0]}">`:"⚽<br>"+esc(top.t.team)}</div><div class="pad"><b style="font-size:17px">${esc(top.t.name)} — ${esc(top.t.form)}</b><div class="meta">${esc(top.t.team)} • ♥ ${top.t.likes} • 👁 ${top.t.views}</div><p style="font-size:13px;color:#BCC7E4;margin-top:8px;line-height:1.6">${esc(top.t.desc||"")}</p><button class="btn btn-lime" style="margin-top:10px;font-size:13px" onclick="openModal(${top.i})">Xem team này →</button></div>`;}
+    else $("featured").style.display="none";
+  } else $("featured").style.display="none";
+  $("grid").innerHTML=list.map(({t,i})=>cardHTML(t,i)).join("");
+}
+window.like=i=>{const t=teams[i];if(!t)return;const tid=t.id||t._key||("x"+i);const k=t._key;
+  if(liked.has(tid)){liked.delete(tid);t.likes=Math.max(0,(t.likes||0)-1);if(useFb&&k)db.ref("fo4/teams/"+k+"/likes").transaction(v=>(v||0)-1)}
+  else{liked.add(tid);t.likes=(t.likes||0)+1;if(useFb&&k)db.ref("fo4/teams/"+k+"/likes").transaction(v=>(v||0)+1);toast("Đã thả tim cho "+t.name+" ♥")}
+  try{localStorage.setItem("fo4_liked2",JSON.stringify([...liked]))}catch(e){}save();render()};
+window.del=i=>{if(!teams[i].mine&&!isAdmin()){toast("Chỉ chủ team hoặc chủ kênh mới xóa được");return}if(confirm("Xóa đội hình này?")){const k=teams[i]._key;if(useFb&&k){db.ref("fo4/teams/"+k).remove()}else{teams.splice(i,1);save()}render();toast("Đã xóa đội hình")}};
+window.pin=i=>{if(!isAdmin())return;teams[i].pinned=!teams[i].pinned;const k=teams[i]._key;if(useFb&&k)db.ref("fo4/teams/"+k+"/pinned").set(!!teams[i].pinned);save();render();toast(teams[i].pinned?"Đã ghim team lên đầu 📌":"Đã bỏ ghim")};
+let reported=new Set(JSON.parse(localStorage.getItem("fo4_reported")||"[]"));
+window.report=i=>{const t=teams[i];if(!t)return;const tid=t.id||t._key||("x"+i);const k=t._key;
+  if(reported.has(tid)){toast("Bạn đã báo bài này rồi");return}if(!confirm("Báo bài này vi phạm cho chủ kênh?"))return;reported.add(tid);try{localStorage.setItem("fo4_reported",JSON.stringify([...reported]))}catch(e){}t.reports=(t.reports||0)+1;if(useFb&&k)db.ref("fo4/teams/"+k+"/reports").transaction(v=>(v||0)+1);save();render();toast("Đã gửi báo xấu, chủ kênh sẽ xem xét 👀")};
+window.previewPending=i=>{const t=pendings[i];if(!t)return;
+  $("mTitle").textContent="[CHỜ DUYỆT] "+t.name+" — "+t.form;
+  $("mMeta").textContent=t.team+(t.plus?" "+t.plus:"")+" • Lương "+t.salary+"/305"+(t.bp?" • 💰 "+t.bp:"");
+  $("mDesc").textContent=t.desc||"Chưa có mô tả";
+  carImgs=allImgs(t);carIdx=0;renderCar();$("mActions").style.display="none";$("modal").classList.add("open")};
+window.openModal=i=>{modalIdx=i;const t=teams[i];t.views=(t.views||0)+1;const k=t._key;if(useFb&&k)db.ref("fo4/teams/"+k+"/views").transaction(v=>(v||0)+1);save();
+  $("mTitle").textContent=t.name+" — "+t.form;$("mMeta").textContent=t.team+(t.plus?" "+t.plus:"")+" • Lương "+t.salary+"/305"+(t.bp?" • 💰 "+t.bp:"")+" • ♥ "+t.likes+" • 👁 "+t.views;
+  $("mDesc").textContent=t.desc||"Chưa có mô tả";
+  carImgs=allImgs(t);carIdx=0;renderCar();
+  $("mLike").textContent="♥ Thích ("+t.likes+")";$("mActions").style.display="flex";$("modal").classList.add("open");render()};
+window.closeModal=()=>$("modal").classList.remove("open");
+// lướt ảnh đội hình trong modal
+let carImgs=[],carIdx=0;
+function renderCar(){const box=$("mImgs");const items=carImgs.map((s,k)=>({s,k})).filter(o=>o.s);
+  if(!items.length){box.innerHTML=`<div class="modalpad" style="color:var(--mut);font-size:13px">Chưa có ảnh.</div>`;return}
+  carIdx=Math.max(0,Math.min(carIdx,items.length-1));const cur=items[carIdx];
+  box.innerHTML=`<div class="mlabel">${carIdx+1}/${items.length} • ${IMG_LABELS[cur.k]||"Ảnh "+(cur.k+1)}</div><div class="car"><img src="${cur.s}" alt="">${items.length>1?`<button class="carbtn prev" onclick="carGo(-1)">‹</button><button class="carbtn next" onclick="carGo(1)">›</button>`:""}</div>${items.length>1?`<div class="cdots">${items.map((_,k)=>`<span class="${k===carIdx?"on":""}" onclick="carDot(${k})"></span>`).join("")}</div>`:""}`}
+window.carGo=d=>{carIdx+=d;renderCar()};
+window.carDot=k=>{carIdx=k;renderCar()};
+$("mLike").onclick=()=>{like(modalIdx);$("mLike").textContent="♥ Thích ("+teams[modalIdx].likes+")"};
+window.copyTeam=()=>{const t=teams[modalIdx];try{navigator.clipboard.writeText(`${t.name} | ${t.team}${t.plus?" "+t.plus:""} | ${t.form} | Luong ${t.salary}/305${t.bp?" | "+t.bp:""} | ${t.desc}`)}catch(e){}toast("Đã copy info team ⧉")};
+$("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+$("authModal").onclick=e=>{if(e.target.id==="authModal")closeAuth()};
+$("editModal").onclick=e=>{if(e.target.id==="editModal")closeEdit()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();closeAuth();closeEdit()}if($("modal").classList.contains("open")){if(e.key==="ArrowLeft")carGo(-1);if(e.key==="ArrowRight")carGo(1)}});
+[$("q"),$("sort")].forEach(el=>el&&el.addEventListener("input",render));
+// chat nổi
+window.toggleChat=force=>{const p=$("chatPanel");const open=p.classList.contains("open");const willClose=force===true?true:(force==="open"?false:open);p.classList.toggle("open",!willClose);try{localStorage.setItem("fo4_dock_closed",willClose?"1":"0")}catch(e){}if(!willClose){try{lastRead=chats.length;localStorage.setItem("fo4_lastread",lastRead)}catch(e){}$("unread").style.display="none";setTimeout(()=>{try{$("chatIn").focus()}catch(e){}},100)}};
+window.dockTab=t=>{const c=t==="chat";$("dockChatBtn").classList.toggle("on",c);$("dockDonateBtn").classList.toggle("on",!c);$("dockChat").style.display=c?"flex":"none";$("dockDonate").style.display=c?"none":"flex";if(c)$("unread").style.display="none"};
+window.openDock=t=>{if(!$("chatPanel").classList.contains("open"))toggleChat();dockTab(t||"chat")};
+let lastRead=+(localStorage.getItem("fo4_lastread")||0);
+function renderChat(){const off=Math.max(0,chats.length-60);const list=chats.slice(-60);const admin=isAdmin();$("msgs").innerHTML=list.length?list.map((m,k)=>{const tag=m.admin?'<span class="adm">ADMIN</span>':m.mod?'<span class="mod">MOD</span>':'<span class="vwr">VIEWER</span>';return `<div class="msg ${m.me?"me":""}"><span class="who"><span class="av">${esc((m.n||"?").trim().charAt(0).toUpperCase())}</span><span class="wname">${esc(m.n)}</span>${tag}${admin?`<button class="ddel" title="Xóa tin nhắn" onclick="delChat(${off+k})">✕</button>`:""}</span><span class="txt">${esc(m.t)}</span></div>`}).join(""):`<div style="text-align:center;color:var(--mut);font-size:12.5px;padding:26px 10px">Chưa có tin nhắn nào.<br>Chào ae một câu đi nào 👋</div>`;$("msgs").scrollTop=1e6;if(admin){$("nick").value="PandaLee";$("nick").disabled=true}else{$("nick").disabled=false;if(!localStorage.getItem(LS_N)||!$("nick").value)$("nick").value=localStorage.getItem(LS_N)||""}
+  if($("chatPanel").classList.contains("open")){lastRead=chats.length;localStorage.setItem("fo4_lastread",lastRead);$("unread").style.display="none"}
+  else{const n=chats.length-lastRead;if(n>0){$("unread").style.display="inline-block";$("unread").textContent=n>9?"9+":n}else $("unread").style.display="none"}}
+function send(){const t=$("chatIn").value.slice(0,300).trim();if(!t)return;
+  let m;
+  if(isAdmin()){m={n:"PandaLee",admin:true,t,me:true,ts:Date.now()}}
+  else{const n=$("nick").value.trim().slice(0,30)||("Viewer"+Math.floor(Math.random()*999));localStorage.setItem(LS_N,n);m={n,t,me:true,ts:Date.now()}}
+  if(useFb){db.ref("fo4/chats").push(m)}else{chats.push(m);saveChats()}$("chatIn").value="";renderChat()}
+$("sendBtn").onclick=send;$("chatIn").onkeydown=e=>{if(e.key==="Enter")send()};
+$("adminPin").onkeydown=e=>{if(e.key==="Enter")unlockAdmin()};
+$("authPin").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
+setInterval(()=>{$("online").textContent=(110+Math.floor(Math.random()*40))+" đang xem"},5000);
+render();renderChat();renderDonates();renderAuth();connectFb();
+setTimeout(()=>{try{if(localStorage.getItem("fo4_dock_closed")==="1")return}catch(e){}if(window.innerWidth<860)return;if(!$("chatPanel").classList.contains("open"))toggleChat()},600);
+</script>
+</body>
+</html>
