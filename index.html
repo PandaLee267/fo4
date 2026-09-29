@@ -429,6 +429,8 @@ let chats=[]; try{chats=JSON.parse(localStorage.getItem(LS_C)||"[]")}catch(e){ch
 const saveChats=()=>{try{localStorage.setItem(LS_C,JSON.stringify(chats.slice(-100)))}catch(e){}};
 const saveDonates=()=>{try{localStorage.setItem(LS_D,JSON.stringify(donates.slice(0,20)))}catch(e){}};
 let liked=new Set();try{liked=new Set(JSON.parse(localStorage.getItem("fo4_liked2")||"[]"))}catch(e){};
+let myIds=new Set();try{myIds=new Set(JSON.parse(localStorage.getItem("fo4_myteams")||"[]"))}catch(e){};
+const claim=id=>{if(!id)return;myIds.add(id);try{localStorage.setItem("fo4_myteams",JSON.stringify([...myIds]))}catch(e){}};
 let pillF="", modalIdx=0;
 // donate thủ công — KHÓA BẰNG MÃ CHỦ KÊNH (đổi mã ở dòng dưới)
 const ADMIN_USER="quyenqn2k2", ADMIN_PIN="Quyen202Lee";
@@ -509,10 +511,11 @@ $("btnPost").onclick=()=>{const name=$("fName").value.trim(),form=$("fForm").val
   if(!imgsData[0]){toast("Chọn ảnh sơ đồ chính đã bro");return}
   const item={id:"L"+Date.now()+Math.floor(Math.random()*999),name,team:$("fTeam").value.trim()||"Tự do",form,salary:+$("fSalary").value||300,plus:$("fPlus").value.trim(),bp:$("fBp").value.trim(),desc:$("fDesc").value.trim(),likes:0,views:0,ts:Date.now(),imgs:[...imgsData],mine:true};
   imgsData=["","",""];["preview1","preview2","preview3"].forEach(p=>$(p).style.display="none");["fName","fTeam","fPlus","fBp","fForm","fSalary","fDesc"].forEach(i=>$(i).value="");["fFile1","fFile2","fFile3"].forEach(i=>$(i).value="");
+  claim(item.id);
   if(isAdmin()){if(useFb){db.ref("fo4/teams").push(item)}else{teams.unshift(item);save()}render();toast("Đã đăng thẳng (chủ kênh) 🚀")}
   else{if(useFb){db.ref("fo4/pendings").push(item)}else{pendings.unshift(item);savePending()}render();toast("Đã gửi! Chờ chủ kênh duyệt rồi mới hiện nhé ⏳")}};
 window.approve=i=>{if(!isAdmin())return;const p=pendings[i];if(!p)return;const pk=p._key;
-  if(useFb){try{const c={};Object.keys(p).forEach(k=>{if(k!=="_key"&&p[k]!==undefined)c[k]=p[k]});db.ref("fo4/teams").push(c);if(pk)db.ref("fo4/pendings/"+pk).remove();render();toast("Đã duyệt team của "+p.name+" ✔")}catch(e){toast("Duyệt lỗi, thử lại nhé")}}else{pendings.splice(i,1);teams.unshift(p);save();savePending();render();toast("Đã duyệt team của "+p.name+" ✔")}};
+  if(useFb){try{const c={};Object.keys(p).forEach(k=>{if(k!=="_key"&&k!=="mine"&&p[k]!==undefined)c[k]=p[k]});db.ref("fo4/teams").push(c);if(pk)db.ref("fo4/pendings/"+pk).remove();render();toast("Đã duyệt team của "+p.name+" ✔")}catch(e){toast("Duyệt lỗi, thử lại nhé")}}else{pendings.splice(i,1);teams.unshift(p);save();savePending();render();toast("Đã duyệt team của "+p.name+" ✔")}};
 window.reject=i=>{if(!isAdmin())return;if(confirm("Từ chối (xóa) bài này?")){const pk=pendings[i]&&pendings[i]._key;if(useFb&&pk){db.ref("fo4/pendings/"+pk).remove()}else{pendings.splice(i,1);savePending()}render()}};
 // pills
 document.querySelectorAll(".pill").forEach(p=>p.onclick=()=>{document.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));p.classList.add("on");pillF=p.dataset.f;render()});
@@ -524,7 +527,7 @@ function cardHTML(t,idx){
   const first=allImgs(t)[0]||"";
   const nImg=allImgs(t).filter(Boolean).length;
   const face=first?`<img src="${first}" loading="lazy" alt="">`:`<div class="ph">${esc(t.team||"FO4")}<br><span style="font-size:11px;font-weight:400">Chưa có ảnh — bấm để xem chi tiết</span></div>`;
-  const admin=isAdmin(), own=t.mine, tid=t.id||t._key||("x"+idx);
+  const admin=isAdmin(), tid=t.id||t._key||("x"+idx), own=admin||myIds.has(tid);
   return `<div class="team"><div class="thumb" onclick="openModal(${idx})">${face}<span class="badge">⚽ ${esc(t.form)} • ${t.salary}/305</span>${t.pinned?`<span class="badge" style="top:10px;left:10px;bottom:auto;background:rgba(200,245,66,.92);color:#0c1503;border-color:transparent">📌 Ghim</span>`:""}${nImg>1?`<span class="badge" style="left:auto;right:10px;bottom:38px">📷 ${nImg} ảnh</span>`:""}<button class="like ${liked.has(tid)?"on":""}" onclick="event.stopPropagation();like(${idx})">♥ ${t.likes||0}</button></div>
   <div class="tbody"><b>${esc(t.name)} <i>${esc(t.team)}</i>${t.plus?` <i class="plus">${esc(t.plus)}</i>`:""}</b><div class="meta">👁 ${t.views}${t.bp?` • 💰 ${esc(t.bp)}`:``} • ${new Date(t.ts).toLocaleDateString("vi-VN")}${admin&&t.reports?` • <span style="color:var(--red);font-weight:800">🚩 ${t.reports} báo xấu</span>`:""}</div><div class="desc">${esc(t.desc||"Chưa có mô tả")}</div>
   <div class="capbar"><i style="width:${pct}%"></i></div><div class="caprow"><span>Lương ${t.salary}/305</span><span>${pct}% quỹ lương</span></div>
@@ -555,7 +558,7 @@ window.like=i=>{const t=teams[i];if(!t)return;const tid=t.id||t._key||("x"+i);co
   if(liked.has(tid)){liked.delete(tid);t.likes=Math.max(0,(t.likes||0)-1);if(useFb&&k)db.ref("fo4/teams/"+k+"/likes").transaction(v=>(v||0)-1)}
   else{liked.add(tid);t.likes=(t.likes||0)+1;if(useFb&&k)db.ref("fo4/teams/"+k+"/likes").transaction(v=>(v||0)+1);toast("Đã thả tim cho "+t.name+" ♥")}
   try{localStorage.setItem("fo4_liked2",JSON.stringify([...liked]))}catch(e){}save();render()};
-window.del=i=>{if(!teams[i].mine&&!isAdmin()){toast("Chỉ chủ team hoặc chủ kênh mới xóa được");return}if(confirm("Xóa đội hình này?")){const k=teams[i]._key;if(useFb&&k){db.ref("fo4/teams/"+k).remove()}else{teams.splice(i,1);save()}render();toast("Đã xóa đội hình")}};
+window.del=i=>{const t=teams[i];if(!t)return;const tid=t.id||t._key;if(!isAdmin()&&!myIds.has(tid)){toast("Chỉ chủ team hoặc chủ kênh mới xóa được");return}if(confirm("Xóa đội hình này?")){const k=t._key;if(useFb&&k){db.ref("fo4/teams/"+k).remove()}else{teams.splice(i,1);save()}render();toast("Đã xóa đội hình")}};
 window.pin=i=>{if(!isAdmin())return;teams[i].pinned=!teams[i].pinned;const k=teams[i]._key;if(useFb&&k)db.ref("fo4/teams/"+k+"/pinned").set(!!teams[i].pinned);save();render();toast(teams[i].pinned?"Đã ghim team lên đầu 📌":"Đã bỏ ghim")};
 let reported=new Set(JSON.parse(localStorage.getItem("fo4_reported")||"[]"));
 window.report=i=>{const t=teams[i];if(!t)return;const tid=t.id||t._key||("x"+i);const k=t._key;
