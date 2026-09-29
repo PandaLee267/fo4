@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <style>
 :root{
@@ -166,6 +167,7 @@ input::placeholder,textarea::placeholder{color:#7E8AA8;opacity:1}
 /* chat floating */
 #chatFab{position:fixed;right:20px;bottom:20px;z-index:70;background:linear-gradient(180deg,#D8FF5C,var(--lime));color:#0c1503;font-weight:900;border:0;border-radius:99px;padding:15px 22px;box-shadow:0 12px 30px rgba(0,0,0,.55);cursor:pointer;font-size:15px;display:inline-flex;align-items:center;gap:8px}
 #chatFab .dot{width:9px;height:9px;border-radius:50%;background:#16a34a;box-shadow:0 0 8px #16a34a}
+#authBtn{display:none}
 #chatPanel{position:fixed;right:20px;bottom:82px;z-index:70;width:340px;max-width:calc(100vw - 40px);display:none;box-shadow:var(--shadow)}
 #chatPanel.open{display:block;animation:pop .2s}
 .chatbox{display:flex;flex-direction:column;height:560px;max-height:70vh}
@@ -186,6 +188,7 @@ input::placeholder,textarea::placeholder{color:#7E8AA8;opacity:1}
 .msg.me .who{color:var(--lime);justify-content:flex-end}
 .mod{background:var(--red);color:#fff;font-size:9px;font-weight:900;border-radius:5px;padding:2px 6px;letter-spacing:.5px}
 .msg .who .wname{font-size:11.5px;letter-spacing:.6px}
+.msg .who .ctime{font-size:8.5px;color:var(--mut2);font-weight:400;letter-spacing:0}
 .adm{background:linear-gradient(180deg,#FFE27A,#E8A800);color:#2a1e00;font-size:8px;font-weight:900;border-radius:5px;padding:1px 5px;letter-spacing:.5px}
 .vwr{background:rgba(74,168,255,.15);border:1px solid rgba(74,168,255,.45);color:#9CD0FF;font-size:8px;font-weight:900;border-radius:5px;padding:1px 5px;letter-spacing:.5px}
 .mod{font-size:8px !important;padding:1px 5px !important}
@@ -221,6 +224,11 @@ footer{border-top:1px solid var(--line);margin-top:10px;background:linear-gradie
 .foot-links a,.foot-links button{text-decoration:none;font-size:12.5px;font-weight:700;color:#C6D0EA;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:99px;padding:8px 16px;cursor:pointer}
 .foot-links a:hover,.foot-links button:hover{border-color:var(--lime);color:var(--lime)}
 .foot-copy{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;line-height:1.8}
+.legal-disclaimer{font-size:11.5px;color:var(--mut);line-height:1.7;margin:18px auto 0;max-width:720px;text-align:left;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.legal-disclaimer p{margin-bottom:10px}
+.legal-disclaimer p:last-child{margin-bottom:0}
+.legal-disclaimer b{color:var(--txt)}
+#legalBox{scroll-margin-top:80px}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -229,11 +237,12 @@ footer{border-top:1px solid var(--line);margin-top:10px;background:linear-gradie
 <div class="ticker"><div id="tickerTxt"></div></div>
 
 <header class="topbar"><div class="topbar-in">
-  <div class="logo">F4</div>
+  <div class="logo" id="logoBtn" style="cursor:pointer" onclick="logoTap()">F4</div>
   <div class="brand"><b>FO4 SQUAD SHARE</b><span>Thư viện đội hình viewer • EA SPORTS FC Online VN</span></div>
   <nav class="nav"><a href="#gridSec" class="active">Thư viện</a><a href="#uploadCard">Đăng team</a><button class="pill" style="border:0" onclick="openDock('donate')">Donate</button><a href="#rulesCard">Nội quy</a></nav>
   <div class="search"><input id="q" placeholder="Tìm HLV, team color, sơ đồ…"></div>
   <button class="btn btn-ghost" id="authBtn" onclick="openAuth()">🔑 Đăng nhập</button>
+  <button class="btn btn-ghost" style="font-size:12.5px" onclick="document.getElementById('legalBox').scrollIntoView({behavior:'smooth'})">📜 Điều khoản</button>
   <button class="btn btn-lime" onclick="document.getElementById('uploadCard').scrollIntoView({behavior:'smooth'})">+ Đăng đội hình</button>
 </div></header>
 
@@ -303,7 +312,7 @@ footer{border-top:1px solid var(--line);margin-top:10px;background:linear-gradie
     <div class="empty" id="empty" style="display:none;margin-top:12px">Chưa có đội hình nào khớp.<br><button class="btn btn-lime" style="margin-top:10px" onclick="document.getElementById('uploadCard').scrollIntoView({behavior:'smooth'})">Đăng team đầu tiên →</button></div>
     <div class="card pad" style="margin-top:14px" id="rulesCard">
       <div class="side-title">📌 Nội quy thư viện</div>
-      <ol class="rules"><li>Ảnh rõ nét, thấy đủ <b>11 cầu thủ + lương team /305</b>.</li><li>Đăng đủ <b>3 ảnh: sơ đồ chính, chiến thuật đội, chiến thuật đơn</b>.</li><li>Ghi đúng <b>sơ đồ + team color + mức thẻ</b> để ae lọc nhanh.</li><li>Bài đăng cần <b>chủ kênh duyệt</b> mới hiển thị.</li><li>Team nhiều like nhất tuần được <b>review trên live</b>.</li><li>Không spam, không ảnh ngoài FC Online — mod xóa thẳng tay.</li></ol>
+      <ol class="rules"><li>Ảnh rõ nét, thấy đủ <b>11 cầu thủ + lương team /305</b>.</li><li>Đăng đủ <b>3 ảnh: sơ đồ chính, chiến thuật đội, chiến thuật đơn</b>.</li><li>Ghi đúng <b>sơ đồ + team color + mức thẻ</b> để ae lọc nhanh.</li><li>Bài đăng cần <b>chủ kênh duyệt</b> mới hiển thị.</li><li>Team nhiều like nhất tuần được <b>review trên live</b>.</li><li>Không tải lên hình ảnh <b>vi phạm pháp luật, thuần phong mỹ tục</b> hoặc chứa <b>thông tin cá nhân nhạy cảm</b> của người khác.</li><li>Không spam, không ảnh ngoài FC Online — mod xóa thẳng tay.</li></ol>
     </div>
   </main>
 
@@ -345,8 +354,8 @@ footer{border-top:1px solid var(--line);margin-top:10px;background:linear-gradie
   <button class="x" onclick="closeAuth()">✕</button>
   <h2 style="font-size:18px">🔑 Chủ kênh đăng nhập</h2>
   <p style="font-size:13px;color:var(--mut);margin-top:6px;line-height:1.6">Đăng nhập để có quyền <b>thêm / sửa / xóa</b> mọi đội hình, donate và tin nhắn chat.</p>
-  <div id="authForm" class="dform" style="margin-top:12px"><input id="authPin" type="password" placeholder="Nhập mã chủ kênh"><button class="btn btn-lime" style="font-size:13px;padding:10px" onclick="loginAdmin()">Đăng nhập</button></div>
-  <div id="authInfo" class="dform" style="display:none;margin-top:12px;text-align:center"><div style="font-size:14px">👑 Đang đăng nhập: <b style="color:var(--lime)">PandaLee</b></div><button class="btn btn-ghost" style="font-size:13px;padding:10px" onclick="logoutAdmin()">Đăng xuất</button></div>
+  <div id="authForm" class="dform" style="margin-top:12px"><input id="authUser" placeholder="Tên đăng nhập"><input id="authPin" type="password" placeholder="Mật khẩu"><button class="btn btn-lime" style="font-size:13px;padding:10px" onclick="loginAdmin()">Đăng nhập</button></div>
+  <div id="authInfo" class="dform" style="display:none;margin-top:12px;text-align:center"><div style="font-size:14px">👑 Đang đăng nhập: <b style="color:var(--lime)">PandaLee</b></div><div style="display:flex;gap:7px"><button class="btn btn-ghost" style="flex:1;font-size:12.5px;padding:9px" onclick="backupAll()">💾 Backup</button><button class="btn btn-ghost" style="flex:1;font-size:12.5px;padding:9px" onclick="restoreAll()">📥 Khôi phục</button></div><input type="file" id="restoreFile" accept="application/json" hidden><button class="btn btn-ghost" style="font-size:13px;padding:10px" onclick="logoutAdmin()">Đăng xuất</button></div>
 </div></div></div>
 <!-- MODAL SỬA ĐỘI HÌNH (chủ kênh) -->
 <div class="modal" id="editModal"><div class="modalbox" style="max-width:440px"><div class="modalpad">
@@ -371,7 +380,14 @@ footer{border-top:1px solid var(--line);margin-top:10px;background:linear-gradie
   <div class="foot-name">FO4 SQUAD SHARE</div>
   <div class="foot-sub">Thư viện đội hình viewer PandaLee<br>🔴 Live 21h30 - 23h30 & 23h - 2h • TikTok @quyenlee267</div>
   <div class="foot-links"><a href="#gridSec">Thư viện</a><a href="#uploadCard">Đăng team</a><button onclick="openDock('donate')">💛 Donate</button><a href="#rulesCard">Nội quy</a><a href="https://www.tiktok.com/@quyenlee267" target="_blank" rel="noopener">TikTok</a><a href="https://zalo.me/0961932836" target="_blank" rel="noopener">Zalo</a></div>
-  <div class="foot-copy">© 2026 PandaLee • Làm bằng ♥ cho anh em FC Online VN<br>Web cộng đồng fan-made, không liên kết với EA SPORTS hay Garena.</div>
+  <div class="foot-copy">© 2026 PandaLee • Làm bằng ♥ cho anh em FC Online VN<br>Web cộng đồng fan-made, không liên kết với EA SPORTS hay Garena.<br>⚠️ Báo cáo vi phạm bản quyền / yêu cầu gỡ nội dung: <a href="https://zalo.me/0961932836" target="_blank" rel="noopener" style="color:var(--lime);font-weight:800">Zalo 096.193.2836</a> — xử lý trong 48h.</div>
+  <div class="legal-disclaimer" id="legalBox">
+    <p><b>Tuyên bố Miễn trừ Trách nhiệm & Quyền Sở hữu Trí tuệ (Disclaimer):</b></p>
+    <p>1. <b>Thương hiệu & Bản quyền:</b> "FC Online", "FIFA Online 4", logo EA SPORTS, cũng như các hình ảnh, dữ liệu liên quan đến cầu thủ và giải đấu thuộc bản quyền của <b>Electronic Arts Inc.</b> và các đơn vị ủy quyền/phát hành liên quan (bao gồm Garena / Vietnam Esports). Trang web này là một dự án cá nhân do cộng đồng người hâm mộ (Fan-made) phát triển, hoạt động phi thương mại và <b>KHÔNG</b> có bất kỳ liên kết, tài trợ hay hợp tác chính thức nào với EA SPORTS hoặc Garena.</p>
+    <p>2. <b>Nội dung do người dùng đăng tải (UGC):</b> Các hình ảnh đội hình, chiến thuật, bình luận và nội dung khác được đóng góp bởi người dùng (viewer). Chúng tôi không sở hữu bản quyền các hình ảnh chụp màn hình này và không chịu trách nhiệm pháp lý trực tiếp về tính chính xác, bản quyền hoặc nội dung do người dùng tải lên. Nếu bạn là chủ sở hữu bản quyền và phát hiện nội dung vi phạm, vui lòng liên hệ trực tiếp để chúng tôi kiểm tra và gỡ bỏ.</p>
+    <p>3. <b>Ủng hộ / Donate:</b> Các khoản đóng góp/ủng hộ qua mã QR mang tính chất tự nguyện nhằm hỗ trợ duy trì máy chủ và phát triển cộng đồng, không cấu thành giao dịch mua bán hàng hóa hay dịch vụ thương mại.</p>
+  </div>
+
 </div></footer>
 
 <script>
@@ -385,9 +401,13 @@ let useFb=false, db=null;
 const toArr=o=>Object.entries(o||{}).map(([k,v])=>Object.assign({_key:k},v));
 function connectFb(){
   try{
-    if(typeof firebase==="undefined")return;
+    if(typeof firebase==="undefined"||!firebase.auth)return;
     if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);
-    db=firebase.database();useFb=true;
+    db=firebase.database();
+    firebase.auth().signInAnonymously().then(attachFb).catch(()=>{useFb=false});
+  }catch(e){useFb=false}
+}
+function attachFb(){useFb=true;
     db.ref("fo4/teams").on("value",s=>{teams=toArr(s.val());render()});
     db.ref("fo4/pendings").on("value",s=>{pendings=toArr(s.val());render()});
     db.ref("fo4/chats").limitToLast(80).on("value",s=>{chats=toArr(s.val());renderChat()});
@@ -395,7 +415,6 @@ function connectFb(){
       if(!donates.length&&!localStorage.getItem("fo4_seeded_donate")){localStorage.setItem("fo4_seeded_donate","1");db.ref("fo4/donates").push({n:"PandaLee",a:"50.000",m:"Mở hàng đầu tuần"})}
       renderDonates()});
     toast("🟢 Đã kết nối realtime — ae chat chung được rồi");
-  }catch(e){useFb=false}
 }
 // nén ảnh trước khi up (giữ DB nhẹ)
 function fileToDataURL(f,maxDim){maxDim=maxDim||1400;return new Promise((res,rej)=>{
@@ -411,16 +430,19 @@ const saveDonates=()=>{try{localStorage.setItem(LS_D,JSON.stringify(donates.slic
 let liked=new Set();try{liked=new Set(JSON.parse(localStorage.getItem("fo4_liked2")||"[]"))}catch(e){};
 let pillF="", modalIdx=0;
 // donate thủ công — KHÓA BẰNG MÃ CHỦ KÊNH (đổi mã ở dòng dưới)
-const ADMIN_PIN="Quyen202Lee";
+const ADMIN_USER="quyenqn2k2", ADMIN_PIN="Quyen202Lee";
 const LS_D="fo4_donates_v1";
 const isAdmin=()=>{try{return sessionStorage.getItem("fo4_admin")==="1"}catch(e){return false}};
 window.unlockAdmin=()=>{if($("adminPin").value===ADMIN_PIN){try{sessionStorage.setItem("fo4_admin","1")}catch(e){}renderDonates();render();renderChat();renderAuth();toast("Mở khóa thành công ☕")}else toast("Sai mã rồi bro")};
 // đăng nhập chủ kênh
-function renderAuth(){$("authBtn").textContent=isAdmin()?"👑 PandaLee":"🔑 Đăng nhập"}
+let loginShown=false,logoTaps=0,logoTimer=null;
+window.logoTap=()=>{logoTaps++;clearTimeout(logoTimer);logoTimer=setTimeout(()=>logoTaps=0,2500);
+  if(logoTaps>=5){logoTaps=0;loginShown=true;renderAuth();toast("👑 Chào chủ kênh")}};
+function renderAuth(){const a=isAdmin(),b=$("authBtn");b.textContent=a?"👑 PandaLee":"🔑 Đăng nhập";b.style.display=(a||loginShown)?"inline-flex":"none"}
 function syncAuthModal(){const a=isAdmin();$("authForm").style.display=a?"none":"flex";$("authInfo").style.display=a?"block":"none"}
 window.openAuth=()=>{syncAuthModal();$("authModal").classList.add("open");setTimeout(()=>{try{$("authPin").focus()}catch(e){}},100)};
 window.closeAuth=()=>$("authModal").classList.remove("open");
-window.loginAdmin=()=>{if($("authPin").value===ADMIN_PIN){try{sessionStorage.setItem("fo4_admin","1")}catch(e){}$("authPin").value="";renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Chào mừng chủ kênh 👑")}else toast("Sai mã rồi bro")};
+window.loginAdmin=()=>{if($("authUser").value.trim()===ADMIN_USER&&$("authPin").value===ADMIN_PIN){try{sessionStorage.setItem("fo4_admin","1")}catch(e){}$("authUser").value="";$("authPin").value="";renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Chào mừng chủ kênh 👑")}else toast("Sai tài khoản hoặc mật khẩu")};
 window.logoutAdmin=()=>{try{sessionStorage.removeItem("fo4_admin")}catch(e){}renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Đã đăng xuất")};
 // sửa đội hình (chủ kênh) — cả chữ lẫn 3 ảnh
 let editIdx=-1, editImgs=["","",""], editSlot=0;
@@ -445,6 +467,17 @@ window.saveEdit=()=>{if(editIdx<0||!teams[editIdx])return;
   if(useFb&&k){const u={name:t.name,team:t.team,plus:t.plus,bp:t.bp,form:t.form,salary:t.salary,desc:t.desc,imgs:t.imgs,pinned:!!t.pinned};db.ref("fo4/teams/"+k).update(u).then(()=>{closeEdit();toast("Đã lưu thay đổi ✔")}).catch(()=>toast("Lưu lỗi, thử lại nhé"))}
   else{save();closeEdit();render();toast("Đã lưu thay đổi ✔")}};
 window.delChat=i=>{if(!isAdmin())return;if(confirm("Xóa tin nhắn này?")){const k=chats[i]&&chats[i]._key;if(useFb&&k){db.ref("fo4/chats/"+k).remove()}else{chats.splice(i,1);saveChats()}renderChat()}};
+window.backupAll=()=>{if(!isAdmin())return;const data={teams,pendings,chats:chats.slice(-100),donates,at:Date.now()};
+  const b=new Blob([JSON.stringify(data)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="fo4-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast("Đã tải backup 💾")};
+window.restoreAll=()=>{if(!isAdmin())return;$("restoreFile").click()};
+$("restoreFile").onchange=e=>{const f=e.target.files[0];$("restoreFile").value="";if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||!Array.isArray(d.teams))throw 0;
+    if(!confirm("Khôi phục backup? Dữ liệu hiện tại sẽ bị THAY THẾ."))return;
+    const clean=a=>(a||[]).map(o=>{const c={};Object.keys(o).forEach(k=>{if(k!=="_key"&&o[k]!==undefined)c[k]=o[k]});return c});
+    if(useFb){db.ref("fo4").set({teams:clean(d.teams),pendings:clean(d.pendings),chats:clean(d.chats).slice(-100),donates:clean(d.donates)})}
+    else{teams=d.teams||[];pendings=d.pendings||[];chats=d.chats||[];donates=d.donates||[];save();savePending();saveChats();saveDonates()}
+    render();renderChat();renderDonates();toast("Đã khôi phục backup ✔")}catch(err){toast("File backup không hợp lệ")}};
+  r.readAsText(f)};
 let donates=[]; try{donates=JSON.parse(localStorage.getItem(LS_D)||"[]")}catch(e){donates=[]}
 if(!localStorage.getItem(LS_D)){donates=[{n:"PandaLee",a:"50.000",m:"Mở hàng đầu tuần"}];try{localStorage.setItem(LS_D,JSON.stringify(donates))}catch(e){}}
 function renderTicker(){const box=$("tickerTxt");if(!box)return;const medal=["🥇","🥈","🥉"];
@@ -478,7 +511,7 @@ $("btnPost").onclick=()=>{const name=$("fName").value.trim(),form=$("fForm").val
   if(isAdmin()){if(useFb){db.ref("fo4/teams").push(item)}else{teams.unshift(item);save()}render();toast("Đã đăng thẳng (chủ kênh) 🚀")}
   else{if(useFb){db.ref("fo4/pendings").push(item)}else{pendings.unshift(item);savePending()}render();toast("Đã gửi! Chờ chủ kênh duyệt rồi mới hiện nhé ⏳")}};
 window.approve=i=>{if(!isAdmin())return;const p=pendings[i];if(!p)return;const pk=p._key;
-  if(useFb){db.ref("fo4/teams").push(Object.assign({},p,{_key:undefined}));if(pk)db.ref("fo4/pendings/"+pk).remove()}else{pendings.splice(i,1);teams.unshift(p);save();savePending()}render();toast("Đã duyệt team của "+p.name+" ✔")};
+  if(useFb){try{const c={};Object.keys(p).forEach(k=>{if(k!=="_key"&&p[k]!==undefined)c[k]=p[k]});db.ref("fo4/teams").push(c);if(pk)db.ref("fo4/pendings/"+pk).remove();render();toast("Đã duyệt team của "+p.name+" ✔")}catch(e){toast("Duyệt lỗi, thử lại nhé")}}else{pendings.splice(i,1);teams.unshift(p);save();savePending();render();toast("Đã duyệt team của "+p.name+" ✔")}};
 window.reject=i=>{if(!isAdmin())return;if(confirm("Từ chối (xóa) bài này?")){const pk=pendings[i]&&pendings[i]._key;if(useFb&&pk){db.ref("fo4/pendings/"+pk).remove()}else{pendings.splice(i,1);savePending()}render()}};
 // pills
 document.querySelectorAll(".pill").forEach(p=>p.onclick=()=>{document.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));p.classList.add("on");pillF=p.dataset.f;render()});
@@ -556,10 +589,24 @@ window.toggleChat=force=>{const p=$("chatPanel");const open=p.classList.contains
 window.dockTab=t=>{const c=t==="chat";$("dockChatBtn").classList.toggle("on",c);$("dockDonateBtn").classList.toggle("on",!c);$("dockChat").style.display=c?"flex":"none";$("dockDonate").style.display=c?"none":"flex";if(c)$("unread").style.display="none"};
 window.openDock=t=>{if(!$("chatPanel").classList.contains("open"))toggleChat();dockTab(t||"chat")};
 let lastRead=+(localStorage.getItem("fo4_lastread")||0);
-function renderChat(){const off=Math.max(0,chats.length-60);const list=chats.slice(-60);const admin=isAdmin();$("msgs").innerHTML=list.length?list.map((m,k)=>{const tag=m.admin?'<span class="adm">ADMIN</span>':m.mod?'<span class="mod">MOD</span>':'<span class="vwr">VIEWER</span>';return `<div class="msg ${m.me?"me":""}"><span class="who"><span class="av">${esc((m.n||"?").trim().charAt(0).toUpperCase())}</span><span class="wname">${esc(m.n)}</span>${tag}${admin?`<button class="ddel" title="Xóa tin nhắn" onclick="delChat(${off+k})">✕</button>`:""}</span><span class="txt">${esc(m.t)}</span></div>`}).join(""):`<div style="text-align:center;color:var(--mut);font-size:12.5px;padding:26px 10px">Chưa có tin nhắn nào.<br>Chào ae một câu đi nào 👋</div>`;$("msgs").scrollTop=1e6;if(admin){$("nick").value="PandaLee";$("nick").disabled=true}else{$("nick").disabled=false;if(!localStorage.getItem(LS_N)||!$("nick").value)$("nick").value=localStorage.getItem(LS_N)||""}
+function renderChat(){const off=Math.max(0,chats.length-60);const list=chats.slice(-60);const admin=isAdmin();$("msgs").innerHTML=list.length?list.map((m,k)=>{const tag=m.admin?'<span class="adm">ADMIN</span>':m.mod?'<span class="mod">MOD</span>':'<span class="vwr">VIEWER</span>';return `<div class="msg ${m.me?"me":""}"><span class="who"><span class="av">${esc((m.n||"?").trim().charAt(0).toUpperCase())}</span><span class="wname">${esc(m.n)}</span>${m.ts?`<span class="ctime">${new Date(m.ts).toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"})}</span>`:""}${tag}${admin?`<button class="ddel" title="Xóa tin nhắn" onclick="delChat(${off+k})">✕</button>`:""}</span><span class="txt">${esc(m.t)}</span></div>`}).join(""):`<div style="text-align:center;color:var(--mut);font-size:12.5px;padding:26px 10px">Chưa có tin nhắn nào.<br>Chào ae một câu đi nào 👋</div>`;$("msgs").scrollTop=1e6;if(admin){$("nick").value="PandaLee";$("nick").disabled=true}else{$("nick").disabled=false;if(!localStorage.getItem(LS_N)||!$("nick").value)$("nick").value=localStorage.getItem(LS_N)||""}
   if($("chatPanel").classList.contains("open")){lastRead=chats.length;localStorage.setItem("fo4_lastread",lastRead);$("unread").style.display="none"}
   else{const n=chats.length-lastRead;if(n>0){$("unread").style.display="inline-block";$("unread").textContent=n>9?"9+":n}else $("unread").style.display="none"}}
-function send(){const t=$("chatIn").value.slice(0,300).trim();if(!t)return;
+// lọc chat: tục + cờ bạc + spam link (admin miễn)
+const BADWORDS=["dit","du","lon","cac","buoi","dcm","dmm","clgt","kubet","ku casino","ca do","ca cuoc","keo nha cai","tai xiu","xoc dia","baccarat","danh bac","ghi de","lo de","no hu","w88","m88","fb88","188bet","shbet","hi88","jun88","789bet","soi keo","keo bong","ban ca doi thuong","nap tien","rut tien"];
+const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+const hasBad=t=>{const n=" "+norm(t)+" ";return BADWORDS.some(w=>n.includes(w))};
+let sendTimes=[];
+function chatAllowed(t){
+  if(isAdmin())return true;
+  const now=Date.now();sendTimes=sendTimes.filter(x=>now-x<60000);
+  if(sendTimes.length&&now-sendTimes[sendTimes.length-1]<4000){toast("Chậm lại bro, 4 giây 1 tin nhé");return false}
+  if(sendTimes.length>=5){toast("Bạn nhắn nhanh quá, nghỉ 1 phút nhé");return false}
+  if(/https?:\/\/|www\./i.test(t)){toast("Gửi link bị chặn để chống spam bro");return false}
+  if(hasBad(t)){toast("Tin nhắn chứa từ bị cấm, sửa lại nhé");return false}
+  sendTimes.push(now);return true;
+}
+function send(){const t=$("chatIn").value.slice(0,300).trim();if(!t)return;if(!chatAllowed(t))return;
   let m;
   if(isAdmin()){m={n:"PandaLee",admin:true,t,me:true,ts:Date.now()}}
   else{const n=$("nick").value.trim().slice(0,30)||("Viewer"+Math.floor(Math.random()*999));localStorage.setItem(LS_N,n);m={n,t,me:true,ts:Date.now()}}
@@ -567,6 +614,7 @@ function send(){const t=$("chatIn").value.slice(0,300).trim();if(!t)return;
 $("sendBtn").onclick=send;$("chatIn").onkeydown=e=>{if(e.key==="Enter")send()};
 $("adminPin").onkeydown=e=>{if(e.key==="Enter")unlockAdmin()};
 $("authPin").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
+$("authUser").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
 setInterval(()=>{$("online").textContent=(110+Math.floor(Math.random()*40))+" đang xem"},5000);
 render();renderChat();renderDonates();renderAuth();connectFb();
 setTimeout(()=>{try{if(localStorage.getItem("fo4_dock_closed")==="1")return}catch(e){}if(window.innerWidth<860)return;if(!$("chatPanel").classList.contains("open"))toggleChat()},600);
