@@ -448,7 +448,7 @@ window.openAuth=()=>{syncAuthModal();$("authModal").classList.add("open");setTim
 window.closeAuth=()=>$("authModal").classList.remove("open");
 window.loginAdmin=()=>{const em=$("authEmail").value.trim(),pw=$("authPass").value;
   if(!em||!pw){toast("Nhập đủ email + mật khẩu");return}
-  firebase.auth().signInWithEmailAndPassword(em,pw).then(()=>{$("authPass").value="";toast("Chào mừng chủ kênh 👑")}).catch(e=>{const c=e&&e.code||"unknown";toast(c==="auth/wrong-password"||c==="auth/invalid-credential"?"Sai email hoặc mật khẩu":c==="auth/too-many-requests"?"Thử lại sau ít phút nhé":"Lỗi đăng nhập ("+c+"), chụp màn hình gửi mình")})};
+  firebase.auth().signInWithEmailAndPassword(em,pw).then(()=>{$("authPass").value="";renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Chào mừng chủ kênh 👑")}).catch(e=>{const c=e&&e.code||"unknown";toast(c==="auth/wrong-password"||c==="auth/invalid-credential"?"Sai email hoặc mật khẩu":c==="auth/too-many-requests"?"Thử lại sau ít phút nhé":"Lỗi đăng nhập ("+c+"), chụp màn hình gửi mình")})};
 window.logoutAdmin=()=>{try{firebase.auth().signOut()}catch(e){}renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Đã đăng xuất")};
 // sửa đội hình (chủ kênh) — cả chữ lẫn 3 ảnh
 let editIdx=-1, editImgs=["","",""], editSlot=0;
@@ -597,7 +597,9 @@ window.toggleChat=force=>{const p=$("chatPanel");const open=p.classList.contains
 window.dockTab=t=>{const c=t==="chat";$("dockChatBtn").classList.toggle("on",c);$("dockDonateBtn").classList.toggle("on",!c);$("dockChat").style.display=c?"flex":"none";$("dockDonate").style.display=c?"none":"flex";if(c)$("unread").style.display="none"};
 window.openDock=t=>{if(!$("chatPanel").classList.contains("open"))toggleChat();dockTab(t||"chat")};
 let lastRead=+(localStorage.getItem("fo4_lastread")||0);
-function renderChat(){const off=Math.max(0,chats.length-60);const list=chats.slice(-60);const admin=isAdmin();$("msgs").innerHTML=list.length?list.map((m,k)=>{const tag=m.admin?'<span class="adm">ADMIN</span>':m.mod?'<span class="mod">MOD</span>':'<span class="vwr">VIEWER</span>';return `<div class="msg ${m.me?"me":""}"><span class="who"><span class="av">${esc((m.n||"?").trim().charAt(0).toUpperCase())}</span><span class="wname">${esc(m.n)}</span>${m.ts?`<span class="ctime">${new Date(m.ts).toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"})}</span>`:""}${tag}${admin?`<button class="ddel" title="Xóa tin nhắn" onclick="delChat(${off+k})">✕</button>`:""}</span><span class="txt">${esc(m.t)}</span></div>`}).join(""):`<div style="text-align:center;color:var(--mut);font-size:12.5px;padding:26px 10px">Chưa có tin nhắn nào.<br>Chào ae một câu đi nào 👋</div>`;$("msgs").scrollTop=1e6;if(admin){$("nick").value="PandaLee";$("nick").disabled=true}else{$("nick").disabled=false;if(!localStorage.getItem(LS_N)||!$("nick").value)$("nick").value=localStorage.getItem(LS_N)||""}
+let ownSet=new Set();try{ownSet=new Set(JSON.parse(sessionStorage.getItem("fo4_ownchat")||"[]"))}catch(e){ownSet=new Set()};
+const markOwn=k=>{if(!k)return;ownSet.add(k);try{sessionStorage.setItem("fo4_ownchat",JSON.stringify([...ownSet].slice(-100)))}catch(e){}};
+function renderChat(){const off=Math.max(0,chats.length-60);const list=chats.slice(-60);const admin=isAdmin();$("msgs").innerHTML=list.length?list.map((m,k)=>{const tag=m.admin?'<span class="adm">ADMIN</span>':m.mod?'<span class="mod">MOD</span>':'<span class="vwr">VIEWER</span>';const mine=m._key?ownSet.has(m._key):!!m.me;return `<div class="msg ${mine?"me":""}"><span class="who"><span class="av">${esc((m.n||"?").trim().charAt(0).toUpperCase())}</span><span class="wname">${esc(m.n)}</span>${m.ts?`<span class="ctime">${new Date(m.ts).toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"})}</span>`:""}${tag}${admin?`<button class="ddel" title="Xóa tin nhắn" onclick="delChat(${off+k})">✕</button>`:""}</span><span class="txt">${esc(m.t)}</span></div>`}).join(""):`<div style="text-align:center;color:var(--mut);font-size:12.5px;padding:26px 10px">Chưa có tin nhắn nào.<br>Chào ae một câu đi nào 👋</div>`;$("msgs").scrollTop=1e6;if(admin){$("nick").value="PandaLee";$("nick").disabled=true}else{$("nick").disabled=false;if(!localStorage.getItem(LS_N)||!$("nick").value)$("nick").value=localStorage.getItem(LS_N)||""}
   if($("chatPanel").classList.contains("open")){lastRead=chats.length;localStorage.setItem("fo4_lastread",lastRead);$("unread").style.display="none"}
   else{const n=chats.length-lastRead;if(n>0){$("unread").style.display="inline-block";$("unread").textContent=n>9?"9+":n}else $("unread").style.display="none"}}
 // lọc chat: tục + cờ bạc + spam link (admin miễn)
@@ -619,7 +621,7 @@ function send(){const t=$("chatIn").value.slice(0,300).trim();if(!t)return;if(!c
   let m;
   if(isAdmin()){m={n:"PandaLee",admin:true,t,me:true,ts:Date.now()}}
   else{const n=$("nick").value.trim().slice(0,30)||("Viewer"+Math.floor(Math.random()*999));localStorage.setItem(LS_N,n);m={n,t,me:true,ts:Date.now()}}
-  if(useFb){db.ref("fo4/chats").push(m)}else{chats.push(m);saveChats()}$("chatIn").value="";renderChat()}
+  if(useFb){try{markOwn(db.ref("fo4/chats").push(m).key)}catch(e){}}else{chats.push(m);saveChats()}$("chatIn").value="";renderChat()}
 $("sendBtn").onclick=send;$("chatIn").onkeydown=e=>{if(e.key==="Enter")send()};
 $("authPass").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
 $("authEmail").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
