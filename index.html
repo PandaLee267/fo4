@@ -342,7 +342,7 @@ footer{border-top:1px solid var(--line);margin-top:10px;background:linear-gradie
       <button class="btn btn-lime" style="width:100%;margin-top:10px;font-size:13px" onclick="copyStk()">⧉ Copy STK</button>
     </div>
     <div style="margin-top:12px"><div class="side-title">🏆 Top cafe tuần</div><div class="top-list" id="donateList"></div>
-      <div class="dform" id="donateLock"><span style="font-size:12.5px;font-weight:700">🔒 Khu vực chủ kênh</span><input id="adminPin" type="password" placeholder="Nhập mã chủ kênh để thêm donate"><button class="btn btn-ghost" style="font-size:12.5px;padding:9px" onclick="unlockAdmin()">Mở khóa</button></div>
+      <div class="dform" id="donateLock"><span style="font-size:12.5px;font-weight:700">🔒 Khu vực chủ kênh</span><button class="btn btn-ghost" style="font-size:12.5px;padding:9px" onclick="toggleChat(true);openAuth()">Đăng nhập để thêm donate</button></div>
       <div class="dform" id="donateForm" style="display:none"><div class="row2"><input id="dName" placeholder="Tên người donate"><input id="dAmount" placeholder="Số tiền (vd: 50K)" style="max-width:110px"></div><input id="dMsg" placeholder="Lời nhắn (không bắt buộc)"><button class="btn btn-lime" style="font-size:12.5px;padding:9px" onclick="addDonate()">+ Thêm donate</button></div>
     </div>
   </div>
@@ -353,7 +353,7 @@ footer{border-top:1px solid var(--line);margin-top:10px;background:linear-gradie
   <button class="x" onclick="closeAuth()">✕</button>
   <h2 style="font-size:18px">🔑 Chủ kênh đăng nhập</h2>
   <p style="font-size:13px;color:var(--mut);margin-top:6px;line-height:1.6">Đăng nhập để có quyền <b>thêm / sửa / xóa</b> mọi đội hình, donate và tin nhắn chat.</p>
-  <div id="authForm" class="dform" style="margin-top:12px"><input id="authUser" placeholder="Tên đăng nhập"><input id="authPin" type="password" placeholder="Mật khẩu"><button class="btn btn-lime" style="font-size:13px;padding:10px" onclick="loginAdmin()">Đăng nhập</button></div>
+  <div id="authForm" class="dform" style="margin-top:12px"><input id="authEmail" type="email" placeholder="Email chủ kênh"><input id="authPass" type="password" placeholder="Mật khẩu"><button class="btn btn-lime" style="font-size:13px;padding:10px" onclick="loginAdmin()">Đăng nhập</button></div>
   <div id="authInfo" class="dform" style="display:none;margin-top:12px;text-align:center"><div style="font-size:14px">👑 Đang đăng nhập: <b style="color:var(--lime)">PandaLee</b></div><div style="display:flex;gap:7px"><button class="btn btn-ghost" style="flex:1;font-size:12.5px;padding:9px" onclick="backupAll()">💾 Backup</button><button class="btn btn-ghost" style="flex:1;font-size:12.5px;padding:9px" onclick="restoreAll()">📥 Khôi phục</button></div><input type="file" id="restoreFile" accept="application/json" hidden><button class="btn btn-ghost" style="font-size:13px;padding:10px" onclick="logoutAdmin()">Đăng xuất</button></div>
 </div></div></div>
 <!-- MODAL SỬA ĐỘI HÌNH (chủ kênh) -->
@@ -403,7 +403,8 @@ function connectFb(){
     if(typeof firebase==="undefined"||!firebase.auth)return;
     if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);
     db=firebase.database();
-    firebase.auth().signInAnonymously().then(attachFb).catch(()=>{useFb=false});
+    if(firebase.auth().currentUser){attachFb()}
+    else{firebase.auth().signInAnonymously().then(attachFb).catch(()=>{useFb=false})}
   }catch(e){useFb=false}
 }
 function attachFb(){useFb=true;
@@ -433,20 +434,22 @@ let myIds=new Set();try{myIds=new Set(JSON.parse(localStorage.getItem("fo4_mytea
 const claim=id=>{if(!id)return;myIds.add(id);try{localStorage.setItem("fo4_myteams",JSON.stringify([...myIds]))}catch(e){}};
 let pillF="", modalIdx=0;
 // donate thủ công — KHÓA BẰNG MÃ CHỦ KÊNH (đổi mã ở dòng dưới)
-const ADMIN_USER="quyenqn2k2", ADMIN_PIN="Quyen202Lee";
+const OWNER_UID="L3M1oDyGQGh3eBgGZDWVBmG9SWx2";
 const LS_D="fo4_donates_v1";
-const isAdmin=()=>{try{return sessionStorage.getItem("fo4_admin")==="1"}catch(e){return false}};
-window.unlockAdmin=()=>{if($("adminPin").value===ADMIN_PIN){try{sessionStorage.setItem("fo4_admin","1")}catch(e){}renderDonates();render();renderChat();renderAuth();toast("Mở khóa thành công ☕")}else toast("Sai mã rồi bro")};
+const isAdmin=()=>{try{const u=firebase.auth().currentUser;return !!(u&&u.uid===OWNER_UID&&OWNER_UID!=="THAY_UID_CUA_BAN")}catch(e){return false}};
+function watchAuth(){try{firebase.auth().onAuthStateChanged(()=>{renderAuth();render();renderChat();renderDonates();if(isAdmin())syncAuthModal()})}catch(e){}}
 // đăng nhập chủ kênh
 let loginShown=false,logoTaps=0,logoTimer=null;
 window.logoTap=()=>{logoTaps++;clearTimeout(logoTimer);logoTimer=setTimeout(()=>logoTaps=0,2500);
   if(logoTaps>=5){logoTaps=0;loginShown=true;renderAuth();toast("👑 Chào chủ kênh")}};
 function renderAuth(){const a=isAdmin(),b=$("authBtn");b.textContent=a?"👑 PandaLee":"🔑 Đăng nhập";b.style.display=(a||loginShown)?"inline-flex":"none"}
 function syncAuthModal(){const a=isAdmin();$("authForm").style.display=a?"none":"flex";$("authInfo").style.display=a?"block":"none"}
-window.openAuth=()=>{syncAuthModal();$("authModal").classList.add("open");setTimeout(()=>{try{$("authPin").focus()}catch(e){}},100)};
+window.openAuth=()=>{syncAuthModal();$("authModal").classList.add("open");setTimeout(()=>{try{$(isAdmin()?"authPass":"authEmail").focus()}catch(e){}},100)};
 window.closeAuth=()=>$("authModal").classList.remove("open");
-window.loginAdmin=()=>{if($("authUser").value.trim()===ADMIN_USER&&$("authPin").value===ADMIN_PIN){try{sessionStorage.setItem("fo4_admin","1")}catch(e){}$("authUser").value="";$("authPin").value="";renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Chào mừng chủ kênh 👑")}else toast("Sai tài khoản hoặc mật khẩu")};
-window.logoutAdmin=()=>{try{sessionStorage.removeItem("fo4_admin")}catch(e){}renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Đã đăng xuất")};
+window.loginAdmin=()=>{const em=$("authEmail").value.trim(),pw=$("authPass").value;
+  if(!em||!pw){toast("Nhập đủ email + mật khẩu");return}
+  firebase.auth().signInWithEmailAndPassword(em,pw).then(()=>{$("authPass").value="";toast("Chào mừng chủ kênh 👑")}).catch(e=>{toast(e&&e.code==="auth/wrong-password"||e.code==="auth/invalid-credential"?"Sai email hoặc mật khẩu":e.code==="auth/too-many-requests"?"Thử lại sau ít phút nhé":"Đăng nhập lỗi, kiểm tra mạng nhé")})};
+window.logoutAdmin=()=>{try{firebase.auth().signOut()}catch(e){}renderAuth();render();renderChat();renderDonates();syncAuthModal();toast("Đã đăng xuất")};
 // sửa đội hình (chủ kênh) — cả chữ lẫn 3 ảnh
 let editIdx=-1, editImgs=["","",""], editSlot=0;
 function renderEditImgs(){$("eImgs").innerHTML=editImgs.map((s,k)=>`<div class="eslot" onclick="pickEditImg(${k})">${s?`<img src="${s}" alt="">`:`<span>📷<br>Trống</span>`}<span class="etag">${IMG_LABELS[k]}</span>${s?`<button class="ex" title="Xóa ảnh này" onclick="event.stopPropagation();delEditImg(${k})">✕</button>`:""}</div>`).join("")}
@@ -618,11 +621,10 @@ function send(){const t=$("chatIn").value.slice(0,300).trim();if(!t)return;if(!c
   else{const n=$("nick").value.trim().slice(0,30)||("Viewer"+Math.floor(Math.random()*999));localStorage.setItem(LS_N,n);m={n,t,me:true,ts:Date.now()}}
   if(useFb){db.ref("fo4/chats").push(m)}else{chats.push(m);saveChats()}$("chatIn").value="";renderChat()}
 $("sendBtn").onclick=send;$("chatIn").onkeydown=e=>{if(e.key==="Enter")send()};
-$("adminPin").onkeydown=e=>{if(e.key==="Enter")unlockAdmin()};
-$("authPin").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
-$("authUser").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
+$("authPass").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
+$("authEmail").onkeydown=e=>{if(e.key==="Enter")loginAdmin()};
 
-render();renderChat();renderDonates();renderAuth();connectFb();
+render();renderChat();renderDonates();renderAuth();watchAuth();connectFb();
 setTimeout(()=>{try{if(localStorage.getItem("fo4_dock_closed")==="1")return}catch(e){}if(window.innerWidth<860)return;if(!$("chatPanel").classList.contains("open"))toggleChat()},600);
 </script>
 </body>
