@@ -434,7 +434,7 @@ let myIds=new Set();try{myIds=new Set(JSON.parse(localStorage.getItem("fo4_mytea
 const claim=id=>{if(!id)return;myIds.add(id);try{localStorage.setItem("fo4_myteams",JSON.stringify([...myIds]))}catch(e){}};
 let pillF="", modalIdx=0;
 // donate thủ công — KHÓA BẰNG MÃ CHỦ KÊNH (đổi mã ở dòng dưới)
-const OWNER_UID="L3M1oDyGQGh3eBgGZDWVBmG9SWx2";
+const OWNER_UID="BhwOgy9Uq5VcCadP5IgGT3sNlZB2";
 const LS_D="fo4_donates_v1";
 const isAdmin=()=>{try{const u=firebase.auth().currentUser;return !!(u&&u.uid===OWNER_UID&&OWNER_UID!=="THAY_UID_CUA_BAN")}catch(e){return false}};
 function watchAuth(){try{firebase.auth().onAuthStateChanged(()=>{renderAuth();render();renderChat();renderDonates();if(isAdmin())syncAuthModal()})}catch(e){}}
